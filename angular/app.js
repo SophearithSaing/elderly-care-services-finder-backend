@@ -5,20 +5,17 @@ const mongoose = require('mongoose');
 const bcrypt = require("bcryptjs")
 const jwt = require('jsonwebtoken');
 const Fuse = require('fuse.js')
-const checkAuth = require('./middleware/check-auth');
+const checkAuth = require('../Backend/middleware/check-auth');
 const multer = require("multer")
 const upload = multer({ dest: 'images/' })
 const path = require("path");
 const { sendWelcomeEmail, sendUpdateEmail } = require('./email/email')
 
 
-
 // connect to database
 mongoose
   .connect(
-    // "mongodb+srv://admin:"+ process.env.MONGO_ATLAS_PW +"@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
-    "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
-
+    "mongodb+srv://admin:"+ process.env.MONGO_ATLAS_PW +"@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
   )
   .then(() => {
     console.log("Connected to database!");
@@ -88,50 +85,49 @@ const storage = multer.diskStorage({
   }
 });
 
-
 // add caregivers
 app.post("/api/caregivers", (req, res, next) => {
   // encrpt the password
   // bcrypt.hash(req.body.password, 10).then(hash => {
-  // create caregiver model
-  const caregiver = new Caregiver({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    birthDate: req.body.birthDate,
-    gender: req.body.gender,
-    houseNumber: req.body.houseNumber,
-    street: req.body.street,
-    subDistrict: req.body.subDistrict,
-    district: req.body.district,
-    province: req.body.province,
-    postalCode: req.body.postalCode,
-    phoneNumber: req.body.phoneNumber,
-    services: req.body.services,
-    certificate: req.body.certificate,
-    experience: req.body.experience,
-    dailyPrice: req.body.dailyPrice,
-    monthlyPrice: req.body.monthlyPrice,
-    imagePath: req.body.imagePath,
-    schedule: req.body.schedule
-  });
-  // save caregiver
-  caregiver
-    .save()
-    .then(createdCaregiver => {
-      res.status(201).json({
-        message: "user saved successfully",
-        caregiver: createdCaregiver
-      });
-      sendWelcomeEmail(caregiver.email, caregiver.name);
-      console.log('new caregiver created')
-      console.log(createdCaregiver)
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: err
-      });
+    // create caregiver model
+    const caregiver = new Caregiver({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      birthDate: req.body.birthDate,
+      gender: req.body.gender,
+      houseNumber: req.body.houseNumber,
+      street: req.body.street,
+      subDistrict: req.body.subDistrict,
+      district: req.body.district,
+      province: req.body.province,
+      postalCode: req.body.postalCode,
+      phoneNumber: req.body.phoneNumber,
+      services: req.body.services,
+      certificate: req.body.certificate,
+      experience: req.body.experience,
+      dailyPrice: req.body.dailyPrice,
+      monthlyPrice: req.body.monthlyPrice,
+      imagePath: req.body.imagePath,
+      schedule: req.body.schedule
     });
+    // save caregiver
+    caregiver
+      .save()
+      .then(createdCaregiver => {
+        res.status(201).json({
+          message: "user saved successfully",
+          caregiver: createdCaregiver
+        });
+        console.log('new caregiver created')
+        console.log(createdCaregiver)
+        sendWelcomeEmail(caregiver.email, caregiver.name);
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: err
+        });
+      });
   // });
 });
 // get caregivers
@@ -188,8 +184,6 @@ app.get("/api/caregivers/:postalCode", (req, res, next) => {
 
 // update caregivers
 app.patch("/api/caregivers/:email", (req, res, next) => {
-  const email = req.body.email;
-  const name = req.body.name;
   const caregiver = new Caregiver({
     _id: req.body._id,
     name: req.body.name,
@@ -212,16 +206,12 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
     imagePath: req.body.imagePath,
     schedule: req.body.availability
   });
-  console.log('email running');
-  console.log(email);
-  console.log(name);
-  sendUpdateEmail(email, name);
   Caregiver.updateOne({ email: req.params.email }, caregiver).then(result => {
     res.status(200).json({ message: "Update successful!" });
   });
   console.log('new caregiver');
   console.log(caregiver);
-
+  sendUpdateEmail(caregiver.email, caregiver.name);
 });
 
 
@@ -301,46 +291,46 @@ app.post("/api/profiles", multer({ storage: storage }).single('profilepic'), (re
 
 // add elders
 // app.post("/api/elders", multer({ storage: storage }).single("image"), (req, res, next) => {
-app.post("/api/elders", upload.single('image'), (req, res, next) => {
+  app.post("/api/elders", upload.single('image'), (req, res, next) => {
   // encrpt the password
-  // bcrypt.hash(req.body.password, 10).then(hash => {
-  const url = req.protocol + "://" + req.get("host");
-  // create caregiver model
-  const elder = new Elder({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    birthDate: req.body.birthDate,
-    gender: req.body.gender,
-    houseNumber: req.body.houseNumber,
-    street: req.body.street,
-    subDistrict: req.body.subDistrict,
-    district: req.body.district,
-    province: req.body.province,
-    postalCode: req.body.postalCode,
-    phoneNumber: req.body.phoneNumber,
-    // imagePath: req.body.filename
-    imagePath: url + "/images/" + req.file
-  });
-  // save elder
-  console.log('file is' + req.busboy.file)
-  elder
-    .save()
-    .then(createdElder => {
-      res.status(201).json({
-        message: "User saved successfully",
-        // elderId: createdElder._id,
-        // imagePath: createdElder.imagePath
-        elder: createdElder
-      })
-      sendWelcomeEmail(elder.email, elder.name);
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: err
-      });
+  bcrypt.hash(req.body.password, 10).then(hash => {
+    const url = req.protocol + "://" + req.get("host");
+    // create caregiver model
+    const elder = new Elder({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      birthDate: req.body.birthDate,
+      gender: req.body.gender,
+      houseNumber: req.body.houseNumber,
+      street: req.body.street,
+      subDistrict: req.body.subDistrict,
+      district: req.body.district,
+      province: req.body.province,
+      postalCode: req.body.postalCode,
+      phoneNumber: req.body.phoneNumber,
+      // imagePath: req.body.filename
+      imagePath: url + "/images/" + req.file
     });
-  // });
+    // save elder
+    console.log('file is'+req.busboy.file)
+    elder
+      .save()
+      .then(createdElder => {
+        res.status(201).json({
+          message: "User saved successfully",
+          // elderId: createdElder._id,
+          // imagePath: createdElder.imagePath
+          elder: createdElder
+        })
+        sendWelcomeEmail(elder.email, elder.name);
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: err
+        });
+      });
+  });
 
 });
 // get elders
@@ -378,7 +368,7 @@ app.get("/api/elders/:email", (req, res, next) => {
   });
 });
 // update elders
-app.patch("/api/elders/:email", multer({ storage: storage }).single("image"), (req, res, next) => {
+app.put("/api/elders/:email", multer({ storage: storage }).single("image"), (req, res, next) => {
   const url = req.protocol + "://" + req.get("host");
   const elder = new Elder({
     _id: req.body._id,
@@ -517,8 +507,7 @@ app.post("/api/authusers/login", (req, res, next) => {
       }
       const token = jwt.sign(
         { email: fetchedUser.email, userId: fetchedUser._id },
-        // process.env.JWT_KEY,
-        'secret_this_should_be_longer',
+        process.env.JWT_KEY,
         { expiresIn: "1h" }
       );
       res.status(200).json({
@@ -537,7 +526,7 @@ app.post("/api/authusers/login", (req, res, next) => {
 });
 
 app.post("/api/requests", (req, res, next) => {
-  const request = new Request({
+  const request = new Request ({
     elderEmail: req.body.elderEmail,
     caregiverEmail: req.body.caregiverEmail,
     startDate: req.body.startDate,
