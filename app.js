@@ -5,9 +5,12 @@ const mongoose = require('mongoose');
 const bcrypt = require("bcryptjs")
 const jwt = require('jsonwebtoken');
 const Fuse = require('fuse.js')
-const checkAuth = require('./middleware/check-auth');
+const checkAuth = require('../Backend/middleware/check-auth');
 const multer = require("multer")
+const upload = multer({ dest: 'images/' })
 const path = require("path");
+
+
 
 // connect to database
 mongoose
@@ -51,9 +54,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  res.sendFile(path.join(__dirname, "angular", "index.html"));
-});
+// app.use((req, res, next) => {
+//   res.sendFile(path.join(__dirname, "angular", "index.html"));
+// });
 
 const MIME_TYPE_MAP = {
   'image/png': 'png',
@@ -63,12 +66,14 @@ const MIME_TYPE_MAP = {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    // const isValid = true;
     const isValid = MIME_TYPE_MAP[file.mimetype];
     let error = new Error("Invalid mime type");
+    console.log(file.mimetype);
     if (isValid) {
       error = null;
     }
-    cb(error, "backend/images");
+    cb(error, "/images");
   },
   filename: (req, file, cb) => {
     const name = file.originalname
@@ -83,7 +88,7 @@ const storage = multer.diskStorage({
 // add caregivers
 app.post("/api/caregivers", (req, res, next) => {
   // encrpt the password
-  bcrypt.hash(req.body.password, 10).then(hash => {
+  // bcrypt.hash(req.body.password, 10).then(hash => {
     // create caregiver model
     const caregiver = new Caregiver({
       name: req.body.name,
@@ -114,13 +119,15 @@ app.post("/api/caregivers", (req, res, next) => {
           message: "user saved successfully",
           caregiver: createdCaregiver
         });
+        console.log('new caregiver created')
+        console.log(createdCaregiver)
       })
       .catch(err => {
         res.status(500).json({
           error: err
         });
       });
-  });
+  // });
 });
 // get caregivers
 app.get("/api/caregivers", (req, res, next) => {
@@ -201,6 +208,8 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
   Caregiver.updateOne({ email: req.params.email }, caregiver).then(result => {
     res.status(200).json({ message: "Update successful!" });
   });
+  console.log('new caregiver');
+  console.log(caregiver);
 });
 
 
@@ -267,8 +276,20 @@ app.get("/api/schedules/:email", (req, res, next) => {
   });
 });
 
+app.post("/api/profiles", multer({ storage: storage }).single('profilepic'), (req, res, next) => {
+  const url = req.protocol + "://" + req.get("host");
+  const file = req.file;
+  // console.log(file.filename);
+  const image = url + "/images/" + req.file
+
+  console.log(image)
+  console.log(url)
+});
+
+
 // add elders
-app.post("/api/elders", multer({ storage: storage }).single("image"), (req, res, next) => {
+// app.post("/api/elders", multer({ storage: storage }).single("image"), (req, res, next) => {
+  app.post("/api/elders", upload.single('image'), (req, res, next) => {
   // encrpt the password
   bcrypt.hash(req.body.password, 10).then(hash => {
     const url = req.protocol + "://" + req.get("host");
@@ -286,17 +307,19 @@ app.post("/api/elders", multer({ storage: storage }).single("image"), (req, res,
       province: req.body.province,
       postalCode: req.body.postalCode,
       phoneNumber: req.body.phoneNumber,
-      imagePath: req.body.filename
-      // imagePath: url + "/images/" + req.file.filename
+      // imagePath: req.body.filename
+      imagePath: url + "/images/" + req.file
     });
     // save elder
+    console.log('file is'+req.busboy.file)
     elder
       .save()
       .then(createdElder => {
         res.status(201).json({
           message: "User saved successfully",
-          elderId: createdElder._id,
-          imagePath: createdElder.imagePath
+          // elderId: createdElder._id,
+          // imagePath: createdElder.imagePath
+          elder: createdElder
         })
           .catch(err => {
             res.status(500).json({
@@ -342,7 +365,7 @@ app.get("/api/elders/:email", (req, res, next) => {
   });
 });
 // update elders
-app.put("/api/elders/:email",multer({ storage: storage }).single("image"), (req, res, next) => {
+app.put("/api/elders/:email", multer({ storage: storage }).single("image"), (req, res, next) => {
   const url = req.protocol + "://" + req.get("host");
   const elder = new Elder({
     _id: req.body._id,
@@ -358,11 +381,10 @@ app.put("/api/elders/:email",multer({ storage: storage }).single("image"), (req,
     province: req.body.province,
     postalCode: req.body.postalCode,
     phoneNumber: req.body.phoneNumber,
-    imagePath: req.body.filename
-    // imagePath: url + "/images/" + req.file.filename
+    imagePath: url + "/images/" + req.file.filename
   });
   Elder.updateOne({ email: req.params.email }, elder).then(result => {
-    res.status(200).json({ message: "Update successful!" });
+    res.status(200).json({ message: "Update successful!", elder: elder });
   });
   // Elder.updateOne({ _id: req.params.id }, elder).then(result => {
   //   res.status(200).json({ message: "Update successful!" });
