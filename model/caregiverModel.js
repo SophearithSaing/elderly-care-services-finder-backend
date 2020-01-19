@@ -13,13 +13,14 @@ const caregiverSchema = mongoose.Schema({
   province: {type: String},
   postalCode: {type: String},
   phoneNumber: {type: String},
-  services: {type: Array},
+  services: {type: Object},
   certificate: {type: String},
   experience: {type: String},
   dailyPrice: {type: Number},
   monthlyPrice: {type: Number},
   imagePath: {type: String},
-  schedule: {type: Array}
+  schedule: {type: Array},
+  approval: {type: Boolean}
 });
 
 module.exports = mongoose.model('Caregiver', caregiverSchema)

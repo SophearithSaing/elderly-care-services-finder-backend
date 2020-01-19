@@ -7,7 +7,9 @@ const requestSchema = mongoose.Schema({
   elderEmail: {type: String},
   startDate: {type: Date},
   stopDate: {type: Date},
-  requireInterview: {type: Boolean}
+  requireInterview: {type: Boolean},
+  status: {type: Boolean},
+  rejectionReason: {type: String}
 });
 
 module.exports = mongoose.model('Request', requestSchema);

@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 const elderSchema = mongoose.Schema({
   name: {type: String},
   email: {type: String},
-  password: {type: String},
   birthDate: {type: Date},
   gender: {type: String},
   houseNumber: {type: String},
