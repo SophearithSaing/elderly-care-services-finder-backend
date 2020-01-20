@@ -15,7 +15,7 @@ const { sendWelcomeEmail, sendUpdateEmail } = require('./email/email')
 // connect to database
 mongoose
   .connect(
-    "mongodb+srv://admin:" + process.env.MONGO_ATLAS_PW + "@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
+    "mongodb+srv://admin:Ve6VxyxV3NotCGdZcluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
   )
   .then(() => {
     console.log("Connected to database!");
@@ -689,7 +689,7 @@ app.post("/api/authusers/login", (req, res, next) => {
       }
       const token = jwt.sign(
         { email: fetchedUser.email, userId: fetchedUser._id },
-        process.env.JWT_KEY,
+        'secret_this_should_be_longer',
         { expiresIn: "1h" }
       );
       res.status(200).json({
