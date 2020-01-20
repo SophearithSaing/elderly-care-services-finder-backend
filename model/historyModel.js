@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const historySchema = mongoose.Schema({
-    // caregiverName: {type: String},
+    caregiverName: {type: String},
     caregiverEmail: {type: String},
-    // elderName: {type: String},
+    elderName: {type: String},
     elderEmail: {type: String},
     startDate: {type: Date},
     stopDate: {type: Date},

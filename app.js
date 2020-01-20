@@ -522,9 +522,9 @@ app.patch("/api/elders/:email", multer({ storage: storage }).single("image"), (r
 
 app.post("/api/history", (req, res, next) => {
   const history = new History({
-    // caregiverName: req.body.CaregiverName,
+    caregiverName: req.body.CaregiverName,
     caregiverEmail: req.body.caregiverEmail,
-    // elderName: req.body.elderName,
+    elderName: req.body.elderName,
     elderEmail: req.body.elderEmail,
     startDate: req.body.startDate,
     stopDate: req.body.stopDate,
@@ -554,7 +554,7 @@ app.get("/api/requests/:email", (req, res, next) => {
 });
 
 app.get("/api/history/:email", (req, res, next) => {
-  History.find({ elderEmail: req.params.email }).then(document => {
+  History.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }] }).then(document => {
     // res.status(200).json({
     //   message: "Fetched successfully!",
     //   user: document
@@ -710,13 +710,16 @@ app.post("/api/authusers/login", (req, res, next) => {
 app.post("/api/requests", (req, res, next) => {
   const request = new Request({
     elderEmail: req.body.elderEmail,
+    elderName: req.body.elderName,
     caregiverEmail: req.body.caregiverEmail,
+    caregiverName: req.body.caregiverName,
     startDate: req.body.startDate,
     stopDate: req.body.stopDate,
+    status: req.body.status,
     requireInterview: req.body.requireInterview,
     rejectionReason: req.body.rejectionReason
   });
-  console.log(user);
+  console.log(request);
   request.save().then(createdRequest => {
     res.status(201).json({
       message: "request saved successfully",

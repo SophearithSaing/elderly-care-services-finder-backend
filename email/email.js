@@ -33,7 +33,7 @@ const sendUpdateEmail = (email, name) => {
 };
 
 const sendRequestEmail = (cgEmail, cgName, eEmail, eName, startDate, stopDate, requireInterview ) => {
-  const interview;
+  const interview = '';
   if (requireInterview === true) {
     interview = 'Interview is required.';
   } else if (require === false) {
@@ -49,8 +49,8 @@ const sendRequestEmail = (cgEmail, cgName, eEmail, eName, startDate, stopDate, r
 }
 
 const sendResponseEmail = (eEmail, eName, cgName, rejection) => {
-  const rejected;
-  const rejectedSubject;
+  const rejected = '';
+  const rejectedSubject = '';
   if (rejection === true) {
     rejected = 'rejected';
     rejectedSubject = 'Rejected';
