@@ -9,7 +9,7 @@ const checkAuth = require('./middleware/check-auth');
 const multer = require("multer")
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
-const { sendWelcomeEmail, sendUpdateEmail } = require('./email/email')
+const { sendWelcomeEmail, sendUpdateEmail, sendRequestEmail, sendResponseEmai } = require('./email/email')
 
 
 // connect to database
@@ -721,6 +721,8 @@ app.post("/api/requests", (req, res, next) => {
     rejectionReason: req.body.rejectionReason
   });
   console.log(request);
+  sendRequestEmail(request.caregiverEmail, request.caregiverName, request.elderEmail, request.elderName, request.startDate, request.stopDate, request.requireInterview);
+
   request.save().then(createdRequest => {
     res.status(201).json({
       message: "request saved successfully",
