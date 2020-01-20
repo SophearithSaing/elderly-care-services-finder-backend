@@ -15,7 +15,7 @@ const { sendWelcomeEmail, sendUpdateEmail } = require('./email/email')
 // connect to database
 mongoose
   .connect(
-    "mongodb+srv://admin:Ve6VxyxV3NotCGdZcluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
+    "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
   )
   .then(() => {
     console.log("Connected to database!");
