@@ -41,7 +41,6 @@ const upload = multer({
   dest: 'Backend/images/'
 })
 
-
 // express app
 const app = express();
 
@@ -229,46 +228,46 @@ app.post("/api/caregivers", (req, res, next) => {
     console.log(document);
     path = document.path;
     console.log('path is ' + path);
-  // create caregiver model
-  const caregiver = new Caregiver({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    birthDate: req.body.birthDate,
-    gender: req.body.gender,
-    houseNumber: req.body.houseNumber,
-    street: req.body.street,
-    subDistrict: req.body.subDistrict,
-    district: req.body.district,
-    province: req.body.province,
-    postalCode: req.body.postalCode,
-    phoneNumber: req.body.phoneNumber,
-    services: req.body.services,
-    certificate: req.body.certificate,
-    experience: req.body.experience,
-    dailyPrice: req.body.dailyPrice,
-    monthlyPrice: req.body.monthlyPrice,
-    imagePath: path,
-    schedule: req.body.schedule,
-    approval: req.body.approval
-  });
-  // save caregiver
-  caregiver
-    .save()
-    .then(createdCaregiver => {
-      res.status(201).json({
-        message: "user saved successfully",
-        caregiver: createdCaregiver
-      });
-      console.log('new caregiver created')
-      console.log(createdCaregiver)
-      sendWelcomeEmail(caregiver.email, caregiver.name);
-    })
-    .catch(err => {
-      res.status(500).json({
-        error: err
-      });
+    // create caregiver model
+    const caregiver = new Caregiver({
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      birthDate: req.body.birthDate,
+      gender: req.body.gender,
+      houseNumber: req.body.houseNumber,
+      street: req.body.street,
+      subDistrict: req.body.subDistrict,
+      district: req.body.district,
+      province: req.body.province,
+      postalCode: req.body.postalCode,
+      phoneNumber: req.body.phoneNumber,
+      services: req.body.services,
+      certificate: req.body.certificate,
+      experience: req.body.experience,
+      dailyPrice: req.body.dailyPrice,
+      monthlyPrice: req.body.monthlyPrice,
+      imagePath: path,
+      schedule: req.body.schedule,
+      approval: req.body.approval
     });
+    // save caregiver
+    caregiver
+      .save()
+      .then(createdCaregiver => {
+        res.status(201).json({
+          message: "user saved successfully",
+          caregiver: createdCaregiver
+        });
+        console.log('new caregiver created')
+        console.log(createdCaregiver)
+        sendWelcomeEmail(caregiver.email, caregiver.name);
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: err
+        });
+      });
   });
 });
 // get caregivers
@@ -330,35 +329,35 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
     console.log(document);
     path = document.path;
     console.log('path is ' + path);
-  const caregiver = new Caregiver({
-    _id: req.body._id,
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    birthDate: req.body.birthDate,
-    gender: req.body.gender,
-    houseNumber: req.body.houseNumber,
-    street: req.body.street,
-    subDistrict: req.body.subDistrict,
-    district: req.body.district,
-    province: req.body.province,
-    postalCode: req.body.postalCode,
-    phoneNumber: req.body.phoneNumber,
-    services: req.body.services,
-    certificate: req.body.certificate,
-    experience: req.body.experience,
-    dailyPrice: req.body.dailyPrice,
-    monthlyPrice: req.body.monthlyPrice,
-    imagePath: path,
-    schedule: req.body.availability,
-    approval: req.body.approval
-  });
-  Caregiver.updateOne({ email: req.params.email }, caregiver).then(result => {
-    res.status(200).json({ message: "Update successful!" });
-  });
-  console.log('new caregiver');
-  console.log(caregiver);
-  sendUpdateEmail(caregiver.email, caregiver.name);
+    const caregiver = new Caregiver({
+      _id: req.body._id,
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      birthDate: req.body.birthDate,
+      gender: req.body.gender,
+      houseNumber: req.body.houseNumber,
+      street: req.body.street,
+      subDistrict: req.body.subDistrict,
+      district: req.body.district,
+      province: req.body.province,
+      postalCode: req.body.postalCode,
+      phoneNumber: req.body.phoneNumber,
+      services: req.body.services,
+      certificate: req.body.certificate,
+      experience: req.body.experience,
+      dailyPrice: req.body.dailyPrice,
+      monthlyPrice: req.body.monthlyPrice,
+      imagePath: path,
+      schedule: req.body.availability,
+      approval: req.body.approval
+    });
+    Caregiver.updateOne({ email: req.params.email }, caregiver).then(result => {
+      res.status(200).json({ message: "Update successful!" });
+    });
+    console.log('new caregiver');
+    console.log(caregiver);
+    sendUpdateEmail(caregiver.email, caregiver.name);
   });
 });
 
@@ -513,31 +512,36 @@ app.get("/api/elders/:email", (req, res, next) => {
   });
 });
 // update elders
-app.patch("/api/elders/:email", multer({ storage: storage }).single("image"), (req, res, next) => {
-  const url = req.protocol + "://" + req.get("host");
-  const elder = new Elder({
-    _id: req.body._id,
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    birthDate: req.body.birthDate,
-    gender: req.body.gender,
-    houseNumber: req.body.houseNumber,
-    street: req.body.street,
-    subDistrict: req.body.subDistrict,
-    district: req.body.district,
-    province: req.body.province,
-    postalCode: req.body.postalCode,
-    phoneNumber: req.body.phoneNumber,
-    imagePath: url + "/images/" + req.file.filename
+app.patch("/api/elders/:email", (req, res, next) => {
+  let path;
+  imagePath.findOne({ email: req.body.email }).then(document => {
+    console.log(document);
+    path = document.path;
+    console.log('path is ' + path);
+    const elder = new Elder({
+      _id: req.body._id,
+      name: req.body.name,
+      email: req.body.email,
+      password: req.body.password,
+      birthDate: req.body.birthDate,
+      gender: req.body.gender,
+      houseNumber: req.body.houseNumber,
+      street: req.body.street,
+      subDistrict: req.body.subDistrict,
+      district: req.body.district,
+      province: req.body.province,
+      postalCode: req.body.postalCode,
+      phoneNumber: req.body.phoneNumber,
+      imagePath: path
+    });
+    Elder.updateOne({ email: req.params.email }, elder).then(result => {
+      res.status(200).json({ message: "Update successful!", elder: elder });
+    });
+    sendUpdateEmail(elder.email, elder.name);
+    // Elder.updateOne({ _id: req.params.id }, elder).then(result => {
+    //   res.status(200).json({ message: "Update successful!" });
+    // });
   });
-  Elder.updateOne({ email: req.params.email }, elder).then(result => {
-    res.status(200).json({ message: "Update successful!", elder: elder });
-  });
-  sendUpdateEmail(elder.email, elder.name);
-  // Elder.updateOne({ _id: req.params.id }, elder).then(result => {
-  //   res.status(200).json({ message: "Update successful!" });
-  // });
 });
 
 app.post("/api/history", (req, res, next) => {
@@ -763,3 +767,4 @@ app.get("/api/requests", (req, res, next) => {
 
 // export app
 module.exports = app;
+
