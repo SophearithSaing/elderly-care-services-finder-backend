@@ -128,8 +128,10 @@ app.patch("/api/upload/:email", multer({ storage: storage }).single('upload'), (
   //   email: req.body.email,
   //   path: url + '/images/' + req.file.filename
   // });
-  Service.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
-    res.status(200).json({ message: "Update successful!", availability: schedule.availability });
+  console.log(path);
+  imagePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
+    console.log(result);
+    res.status(200).json({ message: "Update successful!", path: path});
   });
 });
 
