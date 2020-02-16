@@ -274,12 +274,36 @@ app.post("/api/caregivers", (req, res, next) => {
 });
 // get caregivers
 app.get("/api/caregivers", (req, res, next) => {
-  Caregiver.find().then(documents => {
+  Caregiver.find({ approval: true }).then(documents => {
     res.status(200).json({
       message: 'fetched successfully',
       users: documents
     });
     console.log(documents)
+  });
+});
+
+app.get("/api/allcg", (req, res, next) => {
+  // Caregiver.countDocuments(function (err, count) {
+  //   console.log('there are %d jungle adventures', count);
+  // });
+  Caregiver.countDocuments({ approval: true }).then(count => {
+    res.status(200).json({
+      count
+    });
+    console.log('the number of caregivers is ' + count);
+  });
+});
+
+app.get("/api/alle", (req, res, next) => {
+  // Caregiver.countDocuments(function (err, count) {
+  //   console.log('there are %d jungle adventures', count);
+  // });
+  Elder.countDocuments().then(count => {
+    res.status(200).json({
+      count
+    });
+    console.log('the number of elders is ' + count);
   });
 });
 
