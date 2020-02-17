@@ -283,6 +283,17 @@ app.get("/api/caregivers", (req, res, next) => {
   });
 });
 
+// get caregivers
+app.get("/api/u-caregivers", (req, res, next) => {
+  Caregiver.find({approval:null}).then(documents => {
+    res.status(200).json({
+      message: 'fetched successfully',
+      users: documents
+    });
+    console.log(documents)
+  });
+});
+
 app.get("/api/allcg", (req, res, next) => {
   // Caregiver.countDocuments(function (err, count) {
   //   console.log('there are %d jungle adventures', count);
