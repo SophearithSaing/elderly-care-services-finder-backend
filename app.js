@@ -263,7 +263,7 @@ app.post("/api/caregivers", (req, res, next) => {
         });
         console.log('new caregiver created')
         console.log(createdCaregiver)
-        sendWelcomeEmail(caregiver.email, caregiver.name);
+        // sendWelcomeEmail(caregiver.email, caregiver.name);
       })
       .catch(err => {
         res.status(500).json({
@@ -394,7 +394,7 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
     });
     console.log('new caregiver');
     console.log(caregiver);
-    sendUpdateEmail(caregiver.email, caregiver.name);
+    // sendUpdateEmail(caregiver.email, caregiver.name);
   });
 });
 
@@ -505,7 +505,7 @@ app.post("/api/elders", (req, res, next) => {
           message: "User saved successfully",
           elder: createdElder
         })
-        sendWelcomeEmail(elder.email, elder.name);
+        // sendWelcomeEmail(elder.email, elder.name);
       })
       .catch(err => {
         res.status(500).json({
@@ -574,7 +574,7 @@ app.patch("/api/elders/:email", (req, res, next) => {
     Elder.updateOne({ email: req.params.email }, elder).then(result => {
       res.status(200).json({ message: "Update successful!", elder: elder });
     });
-    sendUpdateEmail(elder.email, elder.name);
+    // sendUpdateEmail(elder.email, elder.name);
     // Elder.updateOne({ _id: req.params.id }, elder).then(result => {
     //   res.status(200).json({ message: "Update successful!" });
     // });
@@ -781,7 +781,7 @@ app.post("/api/requests", (req, res, next) => {
     rejectionReason: req.body.rejectionReason
   });
   console.log(request);
-  sendRequestEmail(request.caregiverEmail, request.caregiverName, request.elderEmail, request.elderName, request.startDate, request.stopDate, request.requireInterview);
+  // sendRequestEmail(request.caregiverEmail, request.caregiverName, request.elderEmail, request.elderName, request.startDate, request.stopDate, request.requireInterview);
   request.save().then(createdRequest => {
     res.status(201).json({
       message: "request saved successfully",
