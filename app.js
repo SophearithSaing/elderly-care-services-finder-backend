@@ -9,13 +9,17 @@ const checkAuth = require('./middleware/check-auth');
 const multer = require("multer")
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
-const { sendWelcomeEmail, sendUpdateEmail, sendRequestEmail, sendResponseEmai } = require('./email/email')
+const { sendWelcomeEmail, sendUpdateEmail, sendRequestEmail, sendResponseEmail, setSchedule } = require('./email/email')
+
+// Chatkit
+const Chatkit = require('@pusher/chatkit-server');
 
 
 // connect to database
 mongoose
   .connect(
-    "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority"
+    "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority",
+    { useFindAndModify: false }
   )
   .then(() => {
     console.log("Connected to database!");
@@ -36,9 +40,10 @@ const History = require('./model/historyModel')
 const imagePath = require('./model/imagePathModel')
 const Service = require('./model/serviceModel')
 const Rejection = require('./model/rejectionModel')
+const AngSchedule = require('./model/angScheduleModel')
 
 const upload = multer({
-  dest: 'Backend/images/'
+  dest: 'images/'
 })
 
 // express app
@@ -62,9 +67,65 @@ app.use((req, res, next) => {
   next();
 });
 
+//other app
+app.post('/api/angular-schedules', (req, res, next) => {
+  const as = new AngSchedule ({
+    date: req.body.date,
+    time: req.body.time,
+    name: req.body.name,
+    message: req.body.message
+  })
+  if (as.message === null) {
+    as.message = 'No Message!'
+  }
+  as.save().then(as => {
+    res.status(201).json({
+      as: as
+    })
+  })
+  .catch(err => {
+    res.status(500).json({
+      error: err
+    })
+  })
+  setSchedule(as.date, as.time, as.name, as.message)
+})
+
 // app.use((req, res, next) => {
 //   res.sendFile(path.join(__dirname, "angular", "index.html"));
 // });
+
+//Chat kit variable
+const chatkit = new Chatkit.default({
+  instanceLocator: 'v1:us1:f885ebc4-642c-43e5-9bac-8e78b7c8bce2',
+  key: '47b725c3-dc8e-417d-a64c-3671574f2e1e:N5lWN1a86XNIVY/Y3NVRdsy02ZHoX8DdAAK4G0ToI+I=',
+});
+
+app.post('/users', (req, res) => {
+  const { username } = req.body;
+
+  chatkit
+    .createUser({
+      id: username,
+      name: username,
+    })
+    .then(() => {
+      res.sendStatus(201);
+    })
+    .catch(err => {
+      if (err.error === 'services/chatkit/user_already_exists') {
+        res.sendStatus(200);
+      } else {
+        res.status(err.status).json(err);
+      }
+    });
+});
+app.post('/authenticate', (req, res) => {
+  const authData = chatkit.authenticate({
+    userId: req.query.user_id,
+  });
+  res.status(authData.status).send(authData.body);
+});
 
 const MIME_TYPE_MAP = {
   'image/png': 'png',
@@ -505,7 +566,7 @@ app.post("/api/elders", (req, res, next) => {
           message: "User saved successfully",
           elder: createdElder
         })
-        // sendWelcomeEmail(elder.email, elder.name);
+        sendWelcomeEmail(elder.email, elder.name);
       })
       .catch(err => {
         res.status(500).json({
@@ -583,7 +644,7 @@ app.patch("/api/elders/:email", (req, res, next) => {
 
 app.post("/api/history", (req, res, next) => {
   const history = new History({
-    caregiverName: req.body.CaregiverName,
+    caregiverName: req.body.caregiverName,
     caregiverEmail: req.body.caregiverEmail,
     elderName: req.body.elderName,
     elderEmail: req.body.elderEmail,
@@ -603,6 +664,18 @@ app.post("/api/history", (req, res, next) => {
 });
 
 app.get("/api/requests/:email", (req, res, next) => {
+  // Request.find({ caregiverEmail: req.params.email }).then(document => {
+  Request.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }], status: null }).then(document => {
+    // res.status(200).json({
+    //   message: "Fetched successfully!",
+    //   user: document
+    // });
+    res.status(200).json(document);
+    console.log(document)
+  });
+});
+
+app.get("/api/requests-status/:email", (req, res, next) => {
   // Request.find({ caregiverEmail: req.params.email }).then(document => {
   Request.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }] }).then(document => {
     // res.status(200).json({
@@ -633,7 +706,7 @@ app.patch("/api/requests/:id", (req, res, next) => {
     status: req.body.status,
     rejectionReason: req.body.rejectionReason
   });
-  Request.findByIdAndUpdate(id, { $set: { status: req.body.status } }).then(result => {
+  Request.findByIdAndUpdate(id, { $set: { status: req.body.status, rejectionReason: req.body.rejectionReason } }).then(result => {
     // Request.updateOne({ _id: req.body._id }, request).then(result => {
     res.status(200).json({ message: "Update successful!" });
     console.log('updated')
