@@ -212,16 +212,6 @@ const sendWelcomeEmail = (email, name) => {
   })
 }
 
-const setSchedule = (date, time, name, message) => {
-  console.log(`Sent from ${name} for appointment on ${date} at ${time}.`)
-  sgMail.send({
-    to: 'sophearithsaing123@gmail.com',
-    from: 'schedule@sophearith.com',
-    subject: 'New Schedule',
-    text: `Sent from ${name} for appointment on ${date} at ${time}. Message: ${message}`
-  })
-}
-
 const sendUpdateEmail = (email, name) => {
   console.log('sending to ' + email + ' for ' + name);
   sgMail.send({
@@ -269,6 +259,5 @@ const sendResponseEmail = (eEmail, eName, cgName, rejection) => {
 
 module.exports = {
   sendWelcomeEmail,
-  sendUpdateEmail,
-  setSchedule
+  sendUpdateEmail
 }

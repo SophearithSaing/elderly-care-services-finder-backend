@@ -9,7 +9,7 @@ const checkAuth = require('./middleware/check-auth');
 const multer = require("multer")
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
-const { sendWelcomeEmail, sendUpdateEmail, sendRequestEmail, sendResponseEmail, setSchedule } = require('./email/email')
+const { sendWelcomeEmail, sendUpdateEmail, sendRequestEmail, sendResponseEmail } = require('./email/email')
 
 // Chatkit
 const Chatkit = require('@pusher/chatkit-server');
@@ -19,7 +19,7 @@ const Chatkit = require('@pusher/chatkit-server');
 mongoose
   .connect(
     "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority",
-    { useFindAndModify: false }
+    { useFindAndModify: false}
   )
   .then(() => {
     console.log("Connected to database!");
@@ -41,9 +41,14 @@ const imagePath = require('./model/imagePathModel')
 const Service = require('./model/serviceModel')
 const Rejection = require('./model/rejectionModel')
 const AngSchedule = require('./model/angScheduleModel')
+const CertificatePath = require('./model/certificateModel')
 
 const upload = multer({
   dest: 'images/'
+})
+
+const certificates = multer({
+  dest: 'certificates/'
 })
 
 // express app
@@ -52,6 +57,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use("/images", express.static(path.join(__dirname, "images")));
+app.use("/certificates", express.static(path.join(__dirname, "certificates")));
 app.use("/", express.static(path.join(__dirname, "angular")));
 
 app.use((req, res, next) => {
@@ -66,30 +72,6 @@ app.use((req, res, next) => {
   );
   next();
 });
-
-//other app
-app.post('/api/angular-schedules', (req, res, next) => {
-  const as = new AngSchedule ({
-    date: req.body.date,
-    time: req.body.time,
-    name: req.body.name,
-    message: req.body.message
-  })
-  if (as.message === null) {
-    as.message = 'No Message!'
-  }
-  as.save().then(as => {
-    res.status(201).json({
-      as: as
-    })
-  })
-  .catch(err => {
-    res.status(500).json({
-      error: err
-    })
-  })
-  setSchedule(as.date, as.time, as.name, as.message)
-})
 
 // app.use((req, res, next) => {
 //   res.sendFile(path.join(__dirname, "angular", "index.html"));
@@ -154,6 +136,27 @@ const storage = multer.diskStorage({
   }
 });
 
+const newStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    // const isValid = true;
+    const isValid = MIME_TYPE_MAP[file.mimetype];
+    let error = new Error("Invalid mime type");
+    console.log(file.mimetype);
+    if (isValid) {
+      error = null;
+    }
+    cb(error, "certificates");
+  },
+  filename: (req, file, cb) => {
+    const name = file.originalname
+      .toLowerCase()
+      .split(" ")
+      .join("-");
+    const ext = MIME_TYPE_MAP[file.mimetype];
+    cb(null, name + "-" + Date.now() + "." + ext);
+  }
+});
+
 app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res) => {
   const url = req.protocol + "://" + req.get("host");
   console.log('this ran')
@@ -171,8 +174,36 @@ app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res
     });
 })
 
+app.post('/api/certificates', multer({ storage: newStorage }).single('certificates'), (req, res) => {
+  const url = req.protocol + "://" + req.get("host");
+  console.log('this ran')
+  const path = new CertificatePath({
+    email: req.body.email,
+    path: url + '/certificates/' + req.file.filename
+  });
+  console.log(path);
+  path
+    .save()
+    .then(response => {
+      res.status(201).json({
+        message: "file saved successfully"
+      });
+    });
+})
+
 app.get("/api/upload/:email", (req, res, next) => {
   imagePath.findOne({ email: req.params.email }).then(document => {
+    // res.status(200).json({
+    //   message: "Fetched successfully!",
+    //   user: document
+    // });
+    res.status(200).json(document);
+    console.log(document)
+  });
+});
+
+app.get("/api/upload/certificate/:email", (req, res, next) => {
+  CertificatePath.findOne({ email: req.params.email }).then(document => {
     // res.status(200).json({
     //   message: "Fetched successfully!",
     //   user: document
@@ -191,6 +222,20 @@ app.patch("/api/upload/:email", multer({ storage: storage }).single('upload'), (
   // });
   console.log(path);
   imagePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
+    console.log(result);
+    res.status(200).json({ message: "Update successful!", path: path});
+  });
+});
+
+app.patch("/api/certificates/:email", multer({ storage: storage }).single('upload'), (req, res, next) => {
+  const url = req.protocol + "://" + req.get("host");
+  const path = url + '/certificates/' + req.file.filename
+  // const path = new imagePath({
+  //   email: req.body.email,
+  //   path: url + '/images/' + req.file.filename
+  // });
+  console.log(path);
+  CertificatePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
     console.log(result);
     res.status(200).json({ message: "Update successful!", path: path});
   });
@@ -684,6 +729,15 @@ app.get("/api/requests-status/:email", (req, res, next) => {
     // });
     res.status(200).json(document);
     console.log(document)
+  });
+});
+
+app.get("/api/history", (req, res, next) => {
+  History.find().then(documents => {
+    res.status(200).json({
+      message: "Fetched successfully!",
+      history: documents,
+    });
   });
 });
 
