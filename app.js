@@ -768,6 +768,14 @@ app.patch("/api/requests/:id", (req, res, next) => {
   });
 });
 
+app.delete("/api/requests/:id", (req, res, next) => {
+  const id = req.params.id;
+  console.log(id)
+  Request.findByIdAndRemove(id).then(result => {
+    res.status(200).json({message: "Delete successful"})
+  });
+});
+
 app.patch("/api/history/:id", (req, res, next) => {
   const id = req.body._id;
   console.log(id);
