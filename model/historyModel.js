@@ -9,7 +9,10 @@ const historySchema = mongoose.Schema({
     stopDate: {type: Date},
     requireInterview: {type: Boolean},
     rating: {type: Number},
-    review: {type: String}
+    review: {type: String},
+    selectedServices: {type: Object},
+    selectedDP: {type: Number},
+    selectedMP: {type: Number}
 });
 
 module.exports = mongoose.model('History', historySchema);

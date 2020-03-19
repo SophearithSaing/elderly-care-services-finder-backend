@@ -15,7 +15,7 @@ const caregiverSchema = mongoose.Schema({
   phoneNumber: {type: String},
   services: {type: Object},
   certificate: {type: String},
-  experience: {type: String},
+  experience: {type: Array},
   dailyPrice: {type: Number},
   monthlyPrice: {type: Number},
   imagePath: {type: String},

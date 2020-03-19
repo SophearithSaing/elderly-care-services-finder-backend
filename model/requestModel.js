@@ -9,7 +9,11 @@ const requestSchema = mongoose.Schema({
   stopDate: {type: Date},
   requireInterview: {type: Boolean},
   status: {type: Boolean},
-  rejectionReason: {type: String}
+  rejectionReason: {type: String},
+  dateSent: {type: Date},
+  selectedServices: {type: Object},
+  selectedDP: {type: Number},
+  selectedMP: {type: Number}
 });
 
 module.exports = mongoose.model('Request', requestSchema);

@@ -540,7 +540,7 @@ app.get("/api/schedules", (req, res, next) => {
   });
 });
 // update schedule
-app.put("/api/schedules/:email", (req, res, next) => {
+app.patch("/api/schedules/:email", (req, res, next) => {
   const schedule = new Schedule({
     _id: req.body._id,
     caregiverEmail: req.body.caregiverEmail,
@@ -554,7 +554,19 @@ app.put("/api/schedules/:email", (req, res, next) => {
     res.status(200).json({ message: "Update successful!", availability: schedule.availability });
   });
   console.log('caregiver updated')
-});
+}); 
+app.patch("/api/experiences", (req, res, next) => {
+  const data = {
+    email: req.body.email,
+    experiences: req.body.experiences
+  };
+  console.log(data);
+  Caregiver.findOneAndUpdate({ email: data.email }, { $set: { experience: data.experiences } }).then(result => {
+    res.status(200).json({ message: "Update successful!"});
+  });
+  console.log('caregiver updated')
+}); 
+
 // get one schedule
 app.get("/api/schedules/:email", (req, res, next) => {
   Schedule.findOne({ caregiverEmail: req.params.email }).then(document => {
@@ -697,7 +709,10 @@ app.post("/api/history", (req, res, next) => {
     stopDate: req.body.stopDate,
     requireInterview: req.body.requireInterview,
     rating: req.body.rating,
-    review: req.body.review
+    review: req.body.review,
+    selectedServices: req.body.selectedServices,
+    selectedDP: req.body.selectedDP,
+    selectedMP: req.body.selectedMP
   });
   console.log('logging history')
   console.log(history);
@@ -913,7 +928,11 @@ app.post("/api/requests", (req, res, next) => {
     stopDate: req.body.stopDate,
     status: req.body.status,
     requireInterview: req.body.requireInterview,
-    rejectionReason: req.body.rejectionReason
+    rejectionReason: req.body.rejectionReason,
+    dateSent: req.body.dateSent,
+    selectedServices: req.body.selectedServices,
+    selectedDP: req.body.selectedDP,
+    selectedMP: req.body.selectedMP
   });
   console.log(request);
   // sendRequestEmail(request.caregiverEmail, request.caregiverName, request.elderEmail, request.elderName, request.startDate, request.stopDate, request.requireInterview);
