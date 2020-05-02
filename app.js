@@ -7,19 +7,29 @@ const jwt = require('jsonwebtoken');
 const Fuse = require('fuse.js')
 const checkAuth = require('./middleware/check-auth');
 const multer = require("multer")
+const crypto = require("crypto")
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
-const { sendWelcomeEmail, sendUpdateEmail, sendRequestEmail, sendResponseEmail } = require('./email/email')
-
-// Chatkit
-const Chatkit = require('@pusher/chatkit-server');
+const
+  {
+    sendPasswordResetEmail,
+    sendCaregiverAcceptEmail,
+    sendCaregiverRejectionEmail,
+    sendCaregiverWelcomeEmail,
+    sendCaregiverUpdateEmail,
+    sendElderWelcomeEmail,
+    sendElderUpdateEmail,
+    sendRequestReceivedEmail,
+  } = require('./email/email')
 
 
 // connect to database
 mongoose
   .connect(
     "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority",
-    { useFindAndModify: false}
+    { useFindAndModify: false, useNewUrlParser: true, useUnifiedTopology: true }
+    // { useNewUrlParser: true },
+    // { useUnifiedTopology: true }
   )
   .then(() => {
     console.log("Connected to database!");
@@ -40,8 +50,9 @@ const History = require('./model/historyModel')
 const imagePath = require('./model/imagePathModel')
 const Service = require('./model/serviceModel')
 const Rejection = require('./model/rejectionModel')
-const AngSchedule = require('./model/angScheduleModel')
+// const AngSchedule = require('./model/angScheduleModel')
 const CertificatePath = require('./model/certificateModel')
+const Messages = require('./model/messagesModel')
 
 const upload = multer({
   dest: 'images/'
@@ -76,38 +87,6 @@ app.use((req, res, next) => {
 // app.use((req, res, next) => {
 //   res.sendFile(path.join(__dirname, "angular", "index.html"));
 // });
-
-//Chat kit variable
-const chatkit = new Chatkit.default({
-  instanceLocator: 'v1:us1:f885ebc4-642c-43e5-9bac-8e78b7c8bce2',
-  key: '47b725c3-dc8e-417d-a64c-3671574f2e1e:N5lWN1a86XNIVY/Y3NVRdsy02ZHoX8DdAAK4G0ToI+I=',
-});
-
-app.post('/users', (req, res) => {
-  const { username } = req.body;
-
-  chatkit
-    .createUser({
-      id: username,
-      name: username,
-    })
-    .then(() => {
-      res.sendStatus(201);
-    })
-    .catch(err => {
-      if (err.error === 'services/chatkit/user_already_exists') {
-        res.sendStatus(200);
-      } else {
-        res.status(err.status).json(err);
-      }
-    });
-});
-app.post('/authenticate', (req, res) => {
-  const authData = chatkit.authenticate({
-    userId: req.query.user_id,
-  });
-  res.status(authData.status).send(authData.body);
-});
 
 const MIME_TYPE_MAP = {
   'image/png': 'png',
@@ -157,6 +136,58 @@ const newStorage = multer.diskStorage({
   }
 });
 
+// messages
+app.post('/api/messages', (req, res, next) => {
+  const messages = new Messages({
+    elder: req.body.elder,
+    caregiver: req.body.caregiver,
+    messages: req.body.messages
+  });
+  console.log(path);
+  messages
+    .save()
+    .then(response => {
+      res.status(201).json({
+        message: "file saved successfully"
+      });
+    });
+})
+
+app.patch('/api/messages', (req, res, next) => {
+  const messages = new Messages({
+    elder: req.body.elder,
+    caregiver: req.body.caregiver,
+    messages: req.body.messages
+  });
+  console.log(path);
+  Messages.findOneAndUpdate({ $and: [{ elder: messages.elder }, { caregiver: messages.caregiver }] }, { $set: { messages: messages.messages } }).then(result => {
+    res.status(200).json({ message: "Update successful!" });
+  });
+})
+
+app.get("/api/messages", (req, res, next) => {
+  Messages.find().then(document => {
+    res.status(200).json(document);
+    console.log(document)
+  });
+});
+
+app.get("/api/messages/:elder&:caregiver", (req, res, next) => {
+  const elder = req.params.elder;
+  const caregiver = req.params.caregiver;
+  console.log(elder, caregiver);
+  Messages.find({ $and: [{ elder: elder }, { caregiver: caregiver }] }).then(document => {
+    // res.status(200).json({
+    //   message: "Fetched successfully!",
+    //   user: document
+    // });
+    res.status(200).json(document);
+    console.log(document)
+  });
+});
+
+
+
 app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res) => {
   const url = req.protocol + "://" + req.get("host");
   console.log('this ran')
@@ -174,7 +205,8 @@ app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res
     });
 })
 
-app.post('/api/certificates', multer({ storage: newStorage }).single('certificates'), (req, res) => {
+
+app.post('/api/certificates', multer({ storage: newStorage }).single('certificate'), (req, res) => {
   const url = req.protocol + "://" + req.get("host");
   console.log('this ran')
   const path = new CertificatePath({
@@ -189,6 +221,9 @@ app.post('/api/certificates', multer({ storage: newStorage }).single('certificat
         message: "file saved successfully"
       });
     });
+  Caregiver.findOneAndUpdate({ email: path.email }, { $set: { certificate: path.path } }).then(result => {
+    res.status(200).json({ message: "Update successful!" });
+  });
 })
 
 app.get("/api/upload/:email", (req, res, next) => {
@@ -223,11 +258,11 @@ app.patch("/api/upload/:email", multer({ storage: storage }).single('upload'), (
   console.log(path);
   imagePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
     console.log(result);
-    res.status(200).json({ message: "Update successful!", path: path});
+    res.status(200).json({ message: "Update successful!", path: path });
   });
 });
 
-app.patch("/api/certificates/:email", multer({ storage: storage }).single('upload'), (req, res, next) => {
+app.patch("/api/certificates/:email", multer({ storage: newStorage }).single('certificate'), (req, res, next) => {
   const url = req.protocol + "://" + req.get("host");
   const path = url + '/certificates/' + req.file.filename
   // const path = new imagePath({
@@ -237,14 +272,19 @@ app.patch("/api/certificates/:email", multer({ storage: storage }).single('uploa
   console.log(path);
   CertificatePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
     console.log(result);
-    res.status(200).json({ message: "Update successful!", path: path});
+    res.status(200).json({ message: "Update successful!" });
   });
+  Caregiver.findOneAndUpdate({ email: req.params.email }, { $set: { certificate: path } }).then(result => {
+    res.status(200).json({ message: "Update successful!" });
+  });
+
 });
 
 // add rejections
 app.post("/api/rejections", (req, res, next) => {
   const rejection = new Rejection({
     caregiverEmail: req.body.caregiverEmail,
+    caregiverName: req.body.caregiverName,
     reason: req.body.reason
   });
   // save caregiver
@@ -261,6 +301,20 @@ app.post("/api/rejections", (req, res, next) => {
         error: err
       });
     });
+  sendCaregiverRejectionEmail(rejection.caregiverEmail, rejection.caregiverName, rejection.reason)
+});
+
+// update rejections
+app.patch("/api/rejections", (req, res, next) => {
+  const rejection = new Rejection({
+    caregiverEmail: req.body.caregiverEmail,
+    caregiverName: req.body.caregiverName,
+    reason: req.body.reason
+  });
+  Rejection.findOneAndUpdate({ caregiverEmail: rejection.caregiverEmail }, { $set: { reason: rejection.reason } }).then(result => {
+    res.status(200).json({ message: "Update successful!", availability: schedule.availability });
+  });
+  sendCaregiverRejectionEmail(rejection.caregiverEmail, rejection.caregiverName, rejection.reason)
 });
 
 // get rejections
@@ -376,6 +430,7 @@ app.post("/api/caregivers", (req, res, next) => {
           error: err
         });
       });
+    sendCaregiverWelcomeEmail(caregiver.email, caregiver.name)
   });
 });
 // get caregivers
@@ -391,7 +446,7 @@ app.get("/api/caregivers", (req, res, next) => {
 
 // get caregivers
 app.get("/api/u-caregivers", (req, res, next) => {
-  Caregiver.find({approval:null}).then(documents => {
+  Caregiver.find({ approval: null }).then(documents => {
     res.status(200).json({
       message: 'fetched successfully',
       users: documents
@@ -498,6 +553,11 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
     Caregiver.updateOne({ email: req.params.email }, caregiver).then(result => {
       res.status(200).json({ message: "Update successful!" });
     });
+    sendCaregiverUpdateEmail(caregiver.email, caregiver.name);
+    console.log(req.body.newCg)
+    if (req.body.newCg === true) {
+      sendCaregiverAcceptEmail(caregiver.email, caregiver.name);
+    }
     console.log('new caregiver');
     console.log(caregiver);
     // sendUpdateEmail(caregiver.email, caregiver.name);
@@ -554,7 +614,7 @@ app.patch("/api/schedules/:email", (req, res, next) => {
     res.status(200).json({ message: "Update successful!", availability: schedule.availability });
   });
   console.log('caregiver updated')
-}); 
+});
 app.patch("/api/experiences", (req, res, next) => {
   const data = {
     email: req.body.email,
@@ -562,10 +622,10 @@ app.patch("/api/experiences", (req, res, next) => {
   };
   console.log(data);
   Caregiver.findOneAndUpdate({ email: data.email }, { $set: { experience: data.experiences } }).then(result => {
-    res.status(200).json({ message: "Update successful!"});
+    res.status(200).json({ message: "Update successful!" });
   });
   console.log('caregiver updated')
-}); 
+});
 
 // get one schedule
 app.get("/api/schedules/:email", (req, res, next) => {
@@ -630,6 +690,7 @@ app.post("/api/elders", (req, res, next) => {
           error: err
         });
       });
+    sendElderWelcomeEmail(elder.email, elder.name)
   });
 });
 // get elders
@@ -692,6 +753,7 @@ app.patch("/api/elders/:email", (req, res, next) => {
     Elder.updateOne({ email: req.params.email }, elder).then(result => {
       res.status(200).json({ message: "Update successful!", elder: elder });
     });
+    sendElderUpdateEmail(elder.email, elder.name);
     // sendUpdateEmail(elder.email, elder.name);
     // Elder.updateOne({ _id: req.params.id }, elder).then(result => {
     //   res.status(200).json({ message: "Update successful!" });
@@ -787,7 +849,7 @@ app.delete("/api/requests/:id", (req, res, next) => {
   const id = req.params.id;
   console.log(id)
   Request.findByIdAndRemove(id).then(result => {
-    res.status(200).json({message: "Delete successful"})
+    res.status(200).json({ message: "Delete successful" })
   });
 });
 
@@ -857,6 +919,27 @@ app.get("/api/users/:id", (req, res, next) => {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // For Auth
+app.get("/api/authusers", (req, res, next) => {
+  AuthUser.find().then(documents => {
+    res.status(200).json({
+      message: "Fetched successfully",
+      users: documents
+    });
+  })
+})
+
+// find one user based on password reset token
+app.get("/api/authusers/:token", (req, res, next) => {
+  const token =  crypto
+  .createHash('sha256')
+  .update(req.params.token)
+  .digest('hex');
+  AuthUser.findOne({ passwordResetToken: token }).then(document => {
+    res.status(200).json(document);
+    console.log(document)
+  });
+})
+
 app.post("/api/authusers/signup", (req, res, next) => {
   bcrypt.hash(req.body.password, 10).then(hash => {
     const authUser = new AuthUser({
@@ -913,11 +996,197 @@ app.post("/api/authusers/login", (req, res, next) => {
       return res.status(401).json({
         message: "Auth failed, error other than user or password.",
         fetchedUser: fetchedUser,
-        user: user
+        // user: user
       });
     });
 });
 
+app.post("/api/authusers/forgotPassword", (req, res, next) => {
+  // 1) Get user based on POSTed email
+
+  // let user = new AuthUser();
+
+  AuthUser.findOne({ email: req.body.email }, function (err, returnedUser) {
+    console.log(returnedUser);
+    // if(!user){
+    //     console.log("No user exists");
+    // }
+    // if (req.body.password === req.body.confirm){
+    //       returneduser.setPassword(req.body.password, function(err) {
+    //           returneduser.save(function(err){
+    //               console.log(err);
+    //               res.redirect("/adminuser");
+    //           });
+    //       });
+    // } else {
+    //    console.log("Passwords do not match")       ;
+    //    res.redirect("/adminuser");
+    // }
+
+    // 2) Generate the random reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    returnedUser.passwordResetToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    console.log(returnedUser.passwordResetToken);
+    returnedUser.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    // user.markModified("passwordResetToken");
+    returnedUser.save({ validateBeforeSave: false });
+
+    // 3) Send it to user's email
+    // const resetURL = `${req.protocol}://${req.get(
+    //   'host'
+    // )}/api/authusers/resetPassword/${resetToken}`;
+    const resetURL =  `http://localhost:4200/reset-password/${resetToken}`;
+    console.log(resetURL)
+
+    sendPasswordResetEmail(returnedUser.email, returnedUser.name, resetURL);
+
+    // try {
+    //   // sendEmail({
+    //   //   email: user.email,
+    //   //   subject: 'Your password reset token (valid for 10 min)',
+    //   //   message
+    //   // });
+  
+    //   sendPasswordResetEmail(returnedUser.email, returnedUser.name, resetURL);
+  
+    //   res.status(200).json({
+    //     status: 'success',
+    //     message: 'Token sent to email!'
+    //   });
+    // } catch (err) {
+    //   returnedUser.passwordResetToken = undefined;
+    //   returnedUser.passwordResetExpires = undefined;
+    //   returnedUser.save({ validateBeforeSave: false });
+
+    // }
+  });
+  // const user = null;
+  // console.log(req.body.email);
+  // AuthUser.findOne({ email: req.body.email }).then(doc => {
+  //   user = doc;
+  //   console.log(user);
+  // })
+  // const resetToken = user.createPasswordResetToken();
+  // user.save({ validateBeforeSave: false });
+  // console.log(user);
+  // if (!user) {
+  //   return next(new AppError('There is no user with email address.', 404));
+  // }
+
+  // 2) Generate the random reset token
+  // const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // user.passwordResetToken = crypto
+  //   .createHash('sha256')
+  //   .update(resetToken)
+  //   .digest('hex');
+  // user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  // // user.markModified("passwordResetToken");
+  // user.save({ validateBeforeSave: false }).then(createdUser => {
+  //   res.status(201).json({
+  //     message: "user saved successfully",
+  //     userId: createdUser._id
+  //   });
+  // });
+
+
+  // 3) Send it to user's email
+  // const resetURL = `${req.protocol}://${req.get(
+  //   'host'
+  // )}/api/authusers/resetPassword/${resetToken}`;
+
+
+  // const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIf you didn't forget your password, please ignore this email!`;
+
+  // try {
+  //   // sendEmail({
+  //   //   email: user.email,
+  //   //   subject: 'Your password reset token (valid for 10 min)',
+  //   //   message
+  //   // });
+
+  //   sendPasswordResetEmail(user.email, user.name, resetURL);
+
+  //   res.status(200).json({
+  //     status: 'success',
+  //     message: 'Token sent to email!'
+  //   });
+  // } catch (err) {
+  //   user.passwordResetToken = undefined;
+  //   user.passwordResetExpires = undefined;
+  //   user.save({ validateBeforeSave: false });
+
+  //   // return next(
+  //   //   new AppError('There was an error sending the email. Try again later!'),
+  //   //   500
+  //   // );
+  // }
+});
+
+app.patch("/api/authusers/resetPassword/:token", (req, res, next) => {
+  // 1) Get user based on the token
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+    console.log(req.params.token, hashedToken);
+
+  AuthUser.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() }
+  }, function(err, user) {
+    // if (!user) {
+    //   return next(new AppError('Token is invalid or has expired', 400));
+    // }
+    console.log(user);
+    bcrypt.hash(req.body.password, 10).then(hash => {
+      user.password = hash;
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      user.save();
+    });
+  });
+  // console.log(user);
+
+  // 2) If token has not expired, and there is user, set the new password
+  // if (!user) {
+  //   return next(new AppError('Token is invalid or has expired', 400));
+  // }
+  // user.password = req.body.password;
+  // user.passwordResetToken = undefined;
+  // user.passwordResetExpires = undefined;
+  // user.save();
+
+  // 3) Update changedPasswordAt property for the user
+  // 4) Log the user in, send JWT
+  // createSendToken(user, 200, res);
+});
+
+// app.post("/api/authusers/:email", (req, res, next) => {
+//   // 1) Get user from collection
+//   const user = User.findById(req.user.id).select('+password');
+
+//   // 2) Check if POSTed current password is correct
+//   if (!(user.correctPassword(req.body.passwordCurrent, user.password))) {
+//     return next(new AppError('Your current password is wrong.', 401));
+//   }
+
+//   // 3) If so, update password
+//   user.password = req.body.password;
+//   user.passwordConfirm = req.body.passwordConfirm;
+//   user.save();
+//   // User.findByIdAndUpdate will NOT work as intended!
+
+//   // 4) Log user in, send JWT
+//   createSendToken(user, 200, res);
+// });
+
+
+// requests
 app.post("/api/requests", (req, res, next) => {
   const request = new Request({
     elderEmail: req.body.elderEmail,
@@ -935,13 +1204,28 @@ app.post("/api/requests", (req, res, next) => {
     selectedMP: req.body.selectedMP
   });
   console.log(request);
-  // sendRequestEmail(request.caregiverEmail, request.caregiverName, request.elderEmail, request.elderName, request.startDate, request.stopDate, request.requireInterview);
+  const startDate = `${request.startDate.getDate()}/${request.startDate.getMonth() + 1}/${request.startDate.getFullYear()}`;
+  const stopDate = `${request.stopDate.getDate()}/${request.stopDate.getMonth() + 1}/${request.stopDate.getFullYear()}`;
+  const totalDays = Math.trunc((request.stopDate.getTime() - request.startDate.getTime()) / 86400000);
+  sendRequestReceivedEmail(
+    request.caregiverEmail,
+    request.caregiverName,
+    request.elderEmail,
+    request.elderName,
+    0,
+    0,
+    request.selectedServices.dailyCare,
+    request.selectedServices.specialCare,
+    startDate,
+    stopDate,
+    request.requireInterview,
+    totalDays
+  )
   request.save().then(createdRequest => {
     res.status(201).json({
       message: "request saved successfully",
       request: createdRequest
     });
-
   });
 });
 

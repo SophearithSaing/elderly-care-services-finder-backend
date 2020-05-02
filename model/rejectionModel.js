@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const rejectionSchema = mongoose.Schema({
   caregiverEmail: {type: String},
+  caregiverName: {type: String},
   reason: {type: String}
 })
 
