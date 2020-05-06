@@ -14,13 +14,16 @@ const
   {
     sendPasswordResetEmail,
     sendPasswordResetConfirmEmail,
+    sendElderWelcomeEmail,
+    sendCaregiverWelcomeEmail,
     sendCaregiverAcceptEmail,
     sendCaregiverRejectionEmail,
-    sendCaregiverWelcomeEmail,
-    sendCaregiverUpdateEmail,
-    sendElderWelcomeEmail,
     sendElderUpdateEmail,
+    sendCaregiverUpdateEmail,
+    sendRequestSentEmail,
     sendRequestReceivedEmail,
+    sendRequestResponseEmail,
+    sendUpdateServicesEmail
   } = require('./email/email')
 
 
@@ -51,7 +54,6 @@ const History = require('./model/historyModel')
 const imagePath = require('./model/imagePathModel')
 const Service = require('./model/serviceModel')
 const Rejection = require('./model/rejectionModel')
-// const AngSchedule = require('./model/angScheduleModel')
 const CertificatePath = require('./model/certificateModel')
 const Messages = require('./model/messagesModel')
 
@@ -178,17 +180,13 @@ app.get("/api/messages/:elder&:caregiver", (req, res, next) => {
   const caregiver = req.params.caregiver;
   console.log(elder, caregiver);
   Messages.find({ $and: [{ elder: elder }, { caregiver: caregiver }] }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
   });
 });
+////////////////////////////////////////////////////////////////////////////////////////
 
-
-
+// upload image to 'upload'
 app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res) => {
   const url = req.protocol + "://" + req.get("host");
   console.log('this ran')
@@ -206,7 +204,7 @@ app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res
     });
 })
 
-
+// upload certificate
 app.post('/api/certificates', multer({ storage: newStorage }).single('certificate'), (req, res) => {
   const url = req.protocol + "://" + req.get("host");
   console.log('this ran')
@@ -229,10 +227,6 @@ app.post('/api/certificates', multer({ storage: newStorage }).single('certificat
 
 app.get("/api/upload/:email", (req, res, next) => {
   imagePath.findOne({ email: req.params.email }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
   });
@@ -240,10 +234,6 @@ app.get("/api/upload/:email", (req, res, next) => {
 
 app.get("/api/upload/certificate/:email", (req, res, next) => {
   CertificatePath.findOne({ email: req.params.email }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
   });
@@ -252,10 +242,6 @@ app.get("/api/upload/certificate/:email", (req, res, next) => {
 app.patch("/api/upload/:email", multer({ storage: storage }).single('upload'), (req, res, next) => {
   const url = req.protocol + "://" + req.get("host");
   const path = url + '/images/' + req.file.filename
-  // const path = new imagePath({
-  //   email: req.body.email,
-  //   path: url + '/images/' + req.file.filename
-  // });
   console.log(path);
   imagePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
     console.log(result);
@@ -266,10 +252,6 @@ app.patch("/api/upload/:email", multer({ storage: storage }).single('upload'), (
 app.patch("/api/certificates/:email", multer({ storage: newStorage }).single('certificate'), (req, res, next) => {
   const url = req.protocol + "://" + req.get("host");
   const path = url + '/certificates/' + req.file.filename
-  // const path = new imagePath({
-  //   email: req.body.email,
-  //   path: url + '/images/' + req.file.filename
-  // });
   console.log(path);
   CertificatePath.findOneAndUpdate({ email: req.params.email }, { $set: { path: path } }).then(result => {
     console.log(result);
@@ -288,7 +270,7 @@ app.post("/api/rejections", (req, res, next) => {
     caregiverName: req.body.caregiverName,
     reason: req.body.reason
   });
-  // save caregiver
+  // save rejections
   rejection
     .save()
     .then(rejection => {
@@ -318,7 +300,7 @@ app.patch("/api/rejections", (req, res, next) => {
   sendCaregiverRejectionEmail(rejection.caregiverEmail, rejection.caregiverName, rejection.reason)
 });
 
-// get rejections
+// get all rejections
 app.get("/api/rejections", (req, res, next) => {
   Rejection.find().then(document => {
     res.status(200).json(document);
@@ -326,7 +308,7 @@ app.get("/api/rejections", (req, res, next) => {
   });
 });
 
-// get rejection
+// get one rejection
 app.get("/api/rejections/:email", (req, res, next) => {
   Rejection.findOne({ caregiverEmail: req.params.email }).then(document => {
     res.status(200).json(document);
@@ -356,7 +338,7 @@ app.post("/api/services", (req, res, next) => {
     });
 });
 
-// get services
+// get all services
 app.get("/api/services", (req, res, next) => {
   Service.find().then(document => {
     res.status(200).json(document);
@@ -364,6 +346,7 @@ app.get("/api/services", (req, res, next) => {
   });
 });
 
+// get one service
 app.get("/api/services/:id", (req, res, next) => {
   Service.findOne({ _id: req.params.id }).then(document => {
     res.status(200).json(document);
@@ -371,7 +354,7 @@ app.get("/api/services/:id", (req, res, next) => {
   });
 });
 
-// get rejection
+// update one services
 app.patch("/api/services/:id", (req, res, next) => {
   const service = {
     dailyCare: req.body.dailyCare,
@@ -381,7 +364,6 @@ app.patch("/api/services/:id", (req, res, next) => {
     res.status(200).json({ message: "Update successful!", availability: schedule.availability });
   });
 });
-
 
 
 // add caregivers
@@ -428,7 +410,6 @@ app.post("/api/caregivers", (req, res, next) => {
         });
         console.log('new caregiver created')
         console.log(createdCaregiver)
-        // sendWelcomeEmail(caregiver.email, caregiver.name);
       })
       .catch(err => {
         res.status(500).json({
@@ -438,7 +419,8 @@ app.post("/api/caregivers", (req, res, next) => {
     sendCaregiverWelcomeEmail(caregiver.email, caregiver.name)
   });
 });
-// get caregivers
+
+// get approved caregivers
 app.get("/api/caregivers", (req, res, next) => {
   Caregiver.find({ approval: true }).then(documents => {
     res.status(200).json({
@@ -449,7 +431,7 @@ app.get("/api/caregivers", (req, res, next) => {
   });
 });
 
-// get caregivers
+// get unapproved caregivers
 app.get("/api/u-caregivers", (req, res, next) => {
   Caregiver.find({ approval: null }).then(documents => {
     res.status(200).json({
@@ -460,59 +442,15 @@ app.get("/api/u-caregivers", (req, res, next) => {
   });
 });
 
-app.get("/api/allcg", (req, res, next) => {
-  // Caregiver.countDocuments(function (err, count) {
-  //   console.log('there are %d jungle adventures', count);
-  // });
-  Caregiver.countDocuments({ approval: true }).then(count => {
-    res.status(200).json({
-      count
-    });
-    console.log('the number of caregivers is ' + count);
-  });
-});
-
-app.get("/api/alle", (req, res, next) => {
-  // Caregiver.countDocuments(function (err, count) {
-  //   console.log('there are %d jungle adventures', count);
-  // });
-  Elder.countDocuments().then(count => {
-    res.status(200).json({
-      count
-    });
-    console.log('the number of elders is ' + count);
-  });
-});
-
+// get one caregiver
 app.get("/api/caregivers/:email", (req, res, next) => {
   Caregiver.findOne({ email: req.params.email }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
   });
 });
 
-// app.get("/api/caregivers", (req, res, next) => {
-//   const postalCode = req.query.postalCode
-//   Caregiver.find().then(documents => {
-//     var options = {
-//       keys: ['postalCode'],
-//     };
-//     var fuse = new Fuse(documents, options)
-
-//     var result = fuse.search(postalCode)
-//     res.status(200).json({
-//       message: 'fetched successfully',
-//       users: result
-//     });
-//     console.log('searching for code ' + postalCode)
-//     console.log(result)
-//   });
-// });
-
+// get one caregiver
 app.get("/api/caregivers/:postalCode", (req, res, next) => {
   const postalCode = req.params.postalCode;
   console.log('finding ' + postalCode)
@@ -522,6 +460,25 @@ app.get("/api/caregivers/:postalCode", (req, res, next) => {
       users: documents
     });
     console.log(documents)
+  });
+});
+
+// count all approved caregivers
+app.get("/api/allcg", (req, res, next) => {
+  Caregiver.countDocuments({ approval: true }).then(count => {
+    res.status(200).json({
+      count
+    });
+    console.log('the number of caregivers is ' + count);
+  });
+});
+
+app.get("/api/alle", (req, res, next) => {
+  Elder.countDocuments().then(count => {
+    res.status(200).json({
+      count
+    });
+    console.log('the number of elders is ' + count);
   });
 });
 
@@ -569,8 +526,6 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
   });
 });
 
-
-
 // add schedule
 app.post("/api/schedules", (req, res, next) => {
   // create schedule model
@@ -594,6 +549,7 @@ app.post("/api/schedules", (req, res, next) => {
       });
     });
 });
+
 // get schedule
 app.get("/api/schedules", (req, res, next) => {
   Schedule.find().then(documents => {
@@ -604,6 +560,7 @@ app.get("/api/schedules", (req, res, next) => {
     console.log(documents)
   });
 });
+
 // update schedule
 app.patch("/api/schedules/:email", (req, res, next) => {
   const schedule = new Schedule({
@@ -635,36 +592,19 @@ app.patch("/api/experiences", (req, res, next) => {
 // get one schedule
 app.get("/api/schedules/:email", (req, res, next) => {
   Schedule.findOne({ caregiverEmail: req.params.email }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
     console.log('get ran')
   });
 });
 
-app.post("/api/profiles", multer({ storage: storage }).single('profilepic'), (req, res, next) => {
-  const url = req.protocol + "://" + req.get("host");
-  const file = req.file;
-  // console.log(file.filename);
-  const image = url + "/images/" + req.file
-
-  console.log(image)
-  console.log(url)
-});
-
-
 // add elders
-// app.post("/api/elders", multer({ storage: storage }).single("image"), (req, res, next) => {
 app.post("/api/elders", (req, res, next) => {
   let path;
   imagePath.findOne({ email: req.body.email }).then(document => {
     console.log(document);
     path = document.path;
     console.log('path is ' + path);
-
     // create elder model
     const elder = new Elder({
       name: req.body.name,
@@ -698,7 +638,8 @@ app.post("/api/elders", (req, res, next) => {
     sendElderWelcomeEmail(elder.email, elder.name)
   });
 });
-// get elders
+
+// get all elders
 app.get("/api/elders/", (req, res, next) => {
   Elder.find().then(documents => {
     res.status(200).json({
@@ -708,31 +649,16 @@ app.get("/api/elders/", (req, res, next) => {
     console.log(documents)
   });
 });
-// get one elder
-// app.get("/api/elders/:id", (req, res, next) => {
-//   Elder.findOne({_id: req.params.id}).then(document => {
-//     res.status(200).json({
-//       message: "Fetched successfully!",
-//       users: document,
-//       id: document._id,
-//       name: document.name,
-//       gender: document.gender,
-//     });
-//     console.log(documents)
-//   });
-// });
 
+// get one elders
 app.get("/api/elders/:email", (req, res, next) => {
   Elder.findOne({ email: req.params.email }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
   });
 });
-// update elders
+
+// update elder
 app.patch("/api/elders/:email", (req, res, next) => {
   let path;
   imagePath.findOne({ email: req.body.email }).then(document => {
@@ -759,13 +685,10 @@ app.patch("/api/elders/:email", (req, res, next) => {
       res.status(200).json({ message: "Update successful!", elder: elder });
     });
     sendElderUpdateEmail(elder.email, elder.name);
-    // sendUpdateEmail(elder.email, elder.name);
-    // Elder.updateOne({ _id: req.params.id }, elder).then(result => {
-    //   res.status(200).json({ message: "Update successful!" });
-    // });
   });
 });
 
+// add history
 app.post("/api/history", (req, res, next) => {
   const history = new History({
     caregiverName: req.body.caregiverName,
@@ -790,30 +713,7 @@ app.post("/api/history", (req, res, next) => {
   });
 });
 
-app.get("/api/requests/:email", (req, res, next) => {
-  // Request.find({ caregiverEmail: req.params.email }).then(document => {
-  Request.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }], status: null }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
-    res.status(200).json(document);
-    console.log(document)
-  });
-});
-
-app.get("/api/requests-status/:email", (req, res, next) => {
-  // Request.find({ caregiverEmail: req.params.email }).then(document => {
-  Request.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }] }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
-    res.status(200).json(document);
-    console.log(document)
-  });
-});
-
+// get all histories
 app.get("/api/history", (req, res, next) => {
   History.find().then(documents => {
     res.status(200).json({
@@ -823,41 +723,15 @@ app.get("/api/history", (req, res, next) => {
   });
 });
 
+// get one history
 app.get("/api/history/:email", (req, res, next) => {
   History.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }] }).then(document => {
-    // res.status(200).json({
-    //   message: "Fetched successfully!",
-    //   user: document
-    // });
     res.status(200).json(document);
     console.log(document)
   });
 });
 
-app.patch("/api/requests/:id", (req, res, next) => {
-  const id = req.body._id;
-  console.log(id);
-  const request = new Request({
-    _id: req.body._id,
-    status: req.body.status,
-    rejectionReason: req.body.rejectionReason
-  });
-  Request.findByIdAndUpdate(id, { $set: { status: req.body.status, rejectionReason: req.body.rejectionReason } }).then(result => {
-    // Request.updateOne({ _id: req.body._id }, request).then(result => {
-    res.status(200).json({ message: "Update successful!" });
-    console.log('updated')
-    console.log(request);
-  });
-});
-
-app.delete("/api/requests/:id", (req, res, next) => {
-  const id = req.params.id;
-  console.log(id)
-  Request.findByIdAndRemove(id).then(result => {
-    res.status(200).json({ message: "Delete successful" })
-  });
-});
-
+// update history
 app.patch("/api/history/:id", (req, res, next) => {
   const id = req.body._id;
   console.log(id);
@@ -866,334 +740,13 @@ app.patch("/api/history/:id", (req, res, next) => {
     review: req.body.review
   });
   History.findByIdAndUpdate(id, { $set: { rating: history.rating, review: history.review } }).then(result => {
-    // Request.updateOne({ _id: req.body._id }, request).then(result => {
     res.status(200).json({ message: "Update successful!" });
     console.log('updated')
     console.log(history);
   });
 });
 
-// add users
-app.post("/api/users", (req, res, next) => {
-  const user = new User({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-  });
-  console.log(user);
-  user.save().then(createdUser => {
-    res.status(201).json({
-      message: "user saved successfully",
-      userId: createdUser._id
-    });
-  });
-});
-// get users
-app.get("/api/users", (req, res, next) => {
-  User.find().then(documents => {
-    res.status(200).json({
-      message: "Fetched successfully!",
-      users: documents,
-    });
-    console.log(documents)
-  });
-});
-// update users
-app.put("/api/users/:id", (req, res, next) => {
-  const user = new User({
-    _id: req.body._id,
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password
-  });
-  User.updateOne({ _id: req.params.id }, user).then(result => {
-    res.status(200).json({ message: "Update successful!" });
-  });
-});
-
-app.get("/api/users/:id", (req, res, next) => {
-  User.findById(req.params.id).then(user => {
-    if (user) {
-      res.status(200).json(user);
-    } else {
-      res.status(404).json({ message: "Post not found!" });
-    }
-  });
-});
-
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// For Auth
-app.get("/api/authusers", (req, res, next) => {
-  AuthUser.find().then(documents => {
-    res.status(200).json({
-      message: "Fetched successfully",
-      users: documents
-    });
-  })
-})
-
-// find one user based on password reset token
-app.get("/api/authusers/:token", (req, res, next) => {
-  const token =  crypto
-  .createHash('sha256')
-  .update(req.params.token)
-  .digest('hex');
-  AuthUser.findOne({ passwordResetToken: token }).then(document => {
-    res.status(200).json(document);
-    console.log(document)
-  });
-})
-
-app.post("/api/authusers/signup", (req, res, next) => {
-  bcrypt.hash(req.body.password, 10).then(hash => {
-    const authUser = new AuthUser({
-      email: req.body.email,
-      password: hash
-    });
-    authUser
-      .save()
-      .then(result => {
-        res.status(201).json({
-          message: "User created!",
-          result: result
-        });
-      })
-      .catch(err => {
-        res.status(500).json({
-          error: err
-        });
-      });
-  });
-});
-
-app.post("/api/authusers/login", (req, res, next) => {
-  let fetchedUser;
-  AuthUser.findOne({ email: req.body.email })
-    .then(user => {
-      if (!user) {
-        return res.status(401).json({
-          message: "Auth failed, user does not exist."
-        });
-      }
-      fetchedUser = user;
-      return bcrypt.compare(req.body.password, user.password);
-    })
-    .then(result => {
-      if (!result) {
-        return res.status(401).json({
-          message: "Auth failed, password does not match.",
-          password: user.password
-        });
-      }
-      const token = jwt.sign(
-        { email: fetchedUser.email, userId: fetchedUser._id },
-        "secret_this_should_be_longer",
-        { expiresIn: "1h" }
-      );
-      res.status(200).json({
-        token: token,
-        expiresIn: 3600,
-        userId: fetchedUser._id
-      });
-    })
-    .catch(err => {
-      return res.status(401).json({
-        message: "Auth failed, error other than user or password.",
-        fetchedUser: fetchedUser,
-        // user: user
-      });
-    });
-});
-
-app.post("/api/authusers/forgotPassword", (req, res, next) => {
-  // 1) Get user based on POSTed email
-
-  // let user = new AuthUser();
-
-  AuthUser.findOne({ email: req.body.email }, function (err, returnedUser) {
-    console.log(returnedUser);
-    // if(!user){
-    //     console.log("No user exists");
-    // }
-    // if (req.body.password === req.body.confirm){
-    //       returneduser.setPassword(req.body.password, function(err) {
-    //           returneduser.save(function(err){
-    //               console.log(err);
-    //               res.redirect("/adminuser");
-    //           });
-    //       });
-    // } else {
-    //    console.log("Passwords do not match")       ;
-    //    res.redirect("/adminuser");
-    // }
-
-    // 2) Generate the random reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-
-    returnedUser.passwordResetToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
-    console.log(returnedUser.passwordResetToken);
-    returnedUser.passwordResetExpires = Date.now() + 10 * 60 * 1000;
-    // user.markModified("passwordResetToken");
-    returnedUser.save({ validateBeforeSave: false });
-
-    // 3) Send it to user's email
-    // const resetURL = `${req.protocol}://${req.get(
-    //   'host'
-    // )}/api/authusers/resetPassword/${resetToken}`;
-    const resetURL =  `http://localhost:4200/reset-password/${resetToken}`;
-    console.log(resetURL)
-
-    sendPasswordResetEmail(returnedUser.email, returnedUser.name, resetURL);
-
-    // try {
-    //   // sendEmail({
-    //   //   email: user.email,
-    //   //   subject: 'Your password reset token (valid for 10 min)',
-    //   //   message
-    //   // });
-  
-    //   sendPasswordResetEmail(returnedUser.email, returnedUser.name, resetURL);
-  
-    //   res.status(200).json({
-    //     status: 'success',
-    //     message: 'Token sent to email!'
-    //   });
-    // } catch (err) {
-    //   returnedUser.passwordResetToken = undefined;
-    //   returnedUser.passwordResetExpires = undefined;
-    //   returnedUser.save({ validateBeforeSave: false });
-
-    // }
-  });
-  // const user = null;
-  // console.log(req.body.email);
-  // AuthUser.findOne({ email: req.body.email }).then(doc => {
-  //   user = doc;
-  //   console.log(user);
-  // })
-  // const resetToken = user.createPasswordResetToken();
-  // user.save({ validateBeforeSave: false });
-  // console.log(user);
-  // if (!user) {
-  //   return next(new AppError('There is no user with email address.', 404));
-  // }
-
-  // 2) Generate the random reset token
-  // const resetToken = crypto.randomBytes(32).toString('hex');
-
-  // user.passwordResetToken = crypto
-  //   .createHash('sha256')
-  //   .update(resetToken)
-  //   .digest('hex');
-  // user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
-  // // user.markModified("passwordResetToken");
-  // user.save({ validateBeforeSave: false }).then(createdUser => {
-  //   res.status(201).json({
-  //     message: "user saved successfully",
-  //     userId: createdUser._id
-  //   });
-  // });
-
-
-  // 3) Send it to user's email
-  // const resetURL = `${req.protocol}://${req.get(
-  //   'host'
-  // )}/api/authusers/resetPassword/${resetToken}`;
-
-
-  // const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIf you didn't forget your password, please ignore this email!`;
-
-  // try {
-  //   // sendEmail({
-  //   //   email: user.email,
-  //   //   subject: 'Your password reset token (valid for 10 min)',
-  //   //   message
-  //   // });
-
-  //   sendPasswordResetEmail(user.email, user.name, resetURL);
-
-  //   res.status(200).json({
-  //     status: 'success',
-  //     message: 'Token sent to email!'
-  //   });
-  // } catch (err) {
-  //   user.passwordResetToken = undefined;
-  //   user.passwordResetExpires = undefined;
-  //   user.save({ validateBeforeSave: false });
-
-  //   // return next(
-  //   //   new AppError('There was an error sending the email. Try again later!'),
-  //   //   500
-  //   // );
-  // }
-});
-
-app.patch("/api/authusers/resetPassword/:token", (req, res, next) => {
-  // 1) Get user based on the token
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(req.params.token)
-    .digest('hex');
-    console.log(req.params.token, hashedToken);
-
-  AuthUser.findOne({
-    passwordResetToken: hashedToken,
-    passwordResetExpires: { $gt: Date.now() }
-  }, function(err, user) {
-    // if (!user) {
-    //   return next(new AppError('Token is invalid or has expired', 400));
-    // }
-    console.log(user);
-    bcrypt.hash(req.body.password, 10).then(hash => {
-      user.password = hash;
-      user.passwordResetToken = undefined;
-      user.passwordResetExpires = undefined;
-      user.save();
-      sendPasswordResetConfirmEmail(user.name, user.email);
-    });
-
-  });
-  // console.log(user);
-
-  // 2) If token has not expired, and there is user, set the new password
-  // if (!user) {
-  //   return next(new AppError('Token is invalid or has expired', 400));
-  // }
-  // user.password = req.body.password;
-  // user.passwordResetToken = undefined;
-  // user.passwordResetExpires = undefined;
-  // user.save();
-
-  // 3) Update changedPasswordAt property for the user
-  // 4) Log the user in, send JWT
-  // createSendToken(user, 200, res);
-});
-
-// app.post("/api/authusers/:email", (req, res, next) => {
-//   // 1) Get user from collection
-//   const user = User.findById(req.user.id).select('+password');
-
-//   // 2) Check if POSTed current password is correct
-//   if (!(user.correctPassword(req.body.passwordCurrent, user.password))) {
-//     return next(new AppError('Your current password is wrong.', 401));
-//   }
-
-//   // 3) If so, update password
-//   user.password = req.body.password;
-//   user.passwordConfirm = req.body.passwordConfirm;
-//   user.save();
-//   // User.findByIdAndUpdate will NOT work as intended!
-
-//   // 4) Log user in, send JWT
-//   createSendToken(user, 200, res);
-// });
-
-
-// requests
+// add request
 app.post("/api/requests", (req, res, next) => {
   const request = new Request({
     elderEmail: req.body.elderEmail,
@@ -1238,7 +791,7 @@ app.post("/api/requests", (req, res, next) => {
   });
 });
 
-// get requests
+// get all requests
 app.get("/api/requests", (req, res, next) => {
   Request.find().then(documents => {
     res.status(200).json({
@@ -1246,6 +799,233 @@ app.get("/api/requests", (req, res, next) => {
       users: documents
     });
     console.log(documents)
+  });
+});
+
+// get one request
+app.get("/api/requests/:email", (req, res, next) => {
+  Request.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }], status: null }).then(document => {
+    res.status(200).json(document);
+    console.log(document)
+  });
+});
+
+// get request status
+app.get("/api/requests-status/:email", (req, res, next) => {
+  Request.find({ $or: [{ caregiverEmail: req.params.email }, { elderEmail: req.params.email }] }).then(document => {
+    res.status(200).json(document);
+    console.log(document)
+  });
+});
+
+// update request
+app.patch("/api/requests/:id", (req, res, next) => {
+  const id = req.body._id;
+  console.log(id);
+  const request = new Request({
+    _id: req.body._id,
+    status: req.body.status,
+    rejectionReason: req.body.rejectionReason
+  });
+  Request.findByIdAndUpdate(id, { $set: { status: req.body.status, rejectionReason: req.body.rejectionReason } }).then(result => {
+    res.status(200).json({ message: "Update successful!" });
+    console.log('updated')
+    console.log(request);
+  });
+});
+
+// delete request
+app.delete("/api/requests/:id", (req, res, next) => {
+  const id = req.params.id;
+  console.log(id)
+  Request.findByIdAndRemove(id).then(result => {
+    res.status(200).json({ message: "Delete successful" })
+  });
+});
+
+// add users
+app.post("/api/users", (req, res, next) => {
+  const user = new User({
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+  });
+  console.log(user);
+  user.save().then(createdUser => {
+    res.status(201).json({
+      message: "user saved successfully",
+      userId: createdUser._id
+    });
+  });
+});
+// get users
+app.get("/api/users", (req, res, next) => {
+  User.find().then(documents => {
+    res.status(200).json({
+      message: "Fetched successfully!",
+      users: documents,
+    });
+    console.log(documents)
+  });
+});
+// update users
+app.put("/api/users/:id", (req, res, next) => {
+  const user = new User({
+    _id: req.body._id,
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password
+  });
+  User.updateOne({ _id: req.params.id }, user).then(result => {
+    res.status(200).json({ message: "Update successful!" });
+  });
+});
+// get one user
+app.get("/api/users/:id", (req, res, next) => {
+  User.findById(req.params.id).then(user => {
+    if (user) {
+      res.status(200).json(user);
+    } else {
+      res.status(404).json({ message: "Post not found!" });
+    }
+  });
+});
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// For Auth
+
+// signup user
+app.post("/api/authusers/signup", (req, res, next) => {
+  bcrypt.hash(req.body.password, 10).then(hash => {
+    const authUser = new AuthUser({
+      email: req.body.email,
+      password: hash
+    });
+    authUser
+      .save()
+      .then(result => {
+        res.status(201).json({
+          message: "User created!",
+          result: result
+        });
+      })
+      .catch(err => {
+        res.status(500).json({
+          error: err
+        });
+      });
+  });
+});
+
+// login
+app.post("/api/authusers/login", (req, res, next) => {
+  let fetchedUser;
+  AuthUser.findOne({ email: req.body.email })
+    .then(user => {
+      if (!user) {
+        return res.status(401).json({
+          message: "Auth failed, user does not exist."
+        });
+      }
+      fetchedUser = user;
+      return bcrypt.compare(req.body.password, user.password);
+    })
+    .then(result => {
+      if (!result) {
+        return res.status(401).json({
+          message: "Auth failed, password does not match.",
+          password: user.password
+        });
+      }
+      const token = jwt.sign(
+        { email: fetchedUser.email, userId: fetchedUser._id },
+        "secret_this_should_be_longer",
+        { expiresIn: "1h" }
+      );
+      res.status(200).json({
+        token: token,
+        expiresIn: 3600,
+        userId: fetchedUser._id
+      });
+    })
+    .catch(err => {
+      return res.status(401).json({
+        message: "Auth failed, error other than user or password.",
+        fetchedUser: fetchedUser,
+        // user: user
+      });
+    });
+});
+
+// get all auth users
+app.get("/api/authusers", (req, res, next) => {
+  AuthUser.find().then(documents => {
+    res.status(200).json({
+      message: "Fetched successfully",
+      users: documents
+    });
+  })
+})
+
+// forgot password
+app.post("/api/authusers/forgotPassword", (req, res, next) => {
+    // 1) Get user based on POSTed email
+    AuthUser.findOne({ email: req.body.email }, function (err, returnedUser) {
+    console.log(returnedUser);
+
+    // 2) Generate the random reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    returnedUser.passwordResetToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
+    console.log(returnedUser.passwordResetToken);
+    returnedUser.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+    returnedUser.save({ validateBeforeSave: false });
+
+    // 3) Send it to user's email
+    const resetURL =  `http://localhost:4200/reset-password/${resetToken}`;
+    console.log(resetURL)
+
+    sendPasswordResetEmail(returnedUser.email, returnedUser.name, resetURL);
+  });
+});
+
+// find one user based on password reset token
+app.get("/api/authusers/:token", (req, res, next) => {
+  const token =  crypto
+  .createHash('sha256')
+  .update(req.params.token)
+  .digest('hex');
+  AuthUser.findOne({ passwordResetToken: token }).then(document => {
+    res.status(200).json(document);
+    console.log(document)
+  });
+})
+
+// reset password
+app.patch("/api/authusers/resetPassword/:token", (req, res, next) => {
+  // 1) Get user based on the token
+  const hashedToken = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
+    console.log(req.params.token, hashedToken);
+
+  AuthUser.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: Date.now() }
+  }, function(err, user) {
+    console.log(user);
+    bcrypt.hash(req.body.password, 10).then(hash => {
+      user.password = hash;
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      user.save();
+      sendPasswordResetConfirmEmail(user.name, user.email);
+    });
   });
 });
 

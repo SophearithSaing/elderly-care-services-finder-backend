@@ -101,8 +101,6 @@ const sendElderWelcomeEmail = (email, name) => {
   sgMail.send(msg);
 }
 
-// sendElderWelcomeEmail('sophearithsaing123@gmail.com', 'Sophearith');
-
 const sendCaregiverUpdateEmail = (email, name) => {
   console.log('sending to ' + email + ' for ' + name);
   const msg = {
@@ -195,7 +193,26 @@ const sendRequestSentEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNumber
   sgMail.send(msg);
 }
 
-const sendResponseEmail = (eEmail, eName, cgName, rejection) => {
+const sendRequestResponseEmail = (eEmail, eName, cgName, rejection) => {
+  const rejected = '';
+  const rejectedSubject = '';
+  if (rejection === true) {
+    rejected = 'rejected';
+    rejectedSubject = 'Rejected';
+  } else if (rejection === false) {
+    rejected = 'accepted';
+    rejectedSubject = 'Accepted';
+  }
+  console.log(`sending to ${eEmail}`);
+  sgMail.send({
+    to: eEmail,
+    from: 'noreply@ecsf.com',
+    subject: `Request ${rejectedSubject}`,
+    text: `Hi, ${cgName}. Your request that was sent to ${cgEmail} was ${rejected}.`
+  })
+}
+
+const sendUpdateServicesEmail = (eEmail, eName, cgName, rejection) => {
   const rejected = '';
   const rejectedSubject = '';
   if (rejection === true) {
@@ -217,13 +234,14 @@ const sendResponseEmail = (eEmail, eName, cgName, rejection) => {
 module.exports = {
   sendPasswordResetEmail,
   sendPasswordResetConfirmEmail,
+  sendElderWelcomeEmail,
+  sendCaregiverWelcomeEmail,
   sendCaregiverAcceptEmail,
   sendCaregiverRejectionEmail,
-  sendCaregiverWelcomeEmail,
-  sendCaregiverUpdateEmail,
-  sendElderWelcomeEmail,
   sendElderUpdateEmail,
-  sendRequestReceivedEmail,
+  sendCaregiverUpdateEmail,
   sendRequestSentEmail,
-  sendResponseEmail
+  sendRequestReceivedEmail,
+  sendRequestResponseEmail,
+  sendUpdateServicesEmail
 }
