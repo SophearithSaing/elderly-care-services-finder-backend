@@ -30,6 +30,20 @@ const sendPasswordResetEmail = (email, name, url) => {
   sgMail.send(msg);
 };
 
+const sendPasswordResetConfirmEmail = (email, name, url) => {
+  console.log('sending to ' + email);
+  const msg = {
+    to: `${email}`,
+    from: 'test@example.com',
+    subject: 'Reset Password Confirmation',
+    dynamic_template_data: {
+      'name': `${name}`
+    },
+    template_id: 'd-522c99ca27534590bf627cd9dc82462a'
+  };
+  sgMail.send(msg);
+};
+
 const sendCaregiverAcceptEmail = (email, name) => {
   console.log('sending to ' + email + ' for ' + name);
   const msg = {
@@ -151,6 +165,36 @@ const sendRequestReceivedEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNu
   sgMail.send(msg);
 }
 
+const sendRequestSentEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNumber, dailyCare, specialCare, startDate, stopDate, requireInterview, totalDays) => {
+  let interview = '';
+  if (requireInterview === true) {
+    interview = 'Required.';
+  } else if (require === false) {
+    interview = 'Not Required.';
+  }
+  console.log(`sending to ${cgEmail} and ${eEmail}`);
+  const msg = {
+    to: `${cgEmail}`,
+    from: 'test@example.com',
+    subject: 'New Request Received',
+    dynamic_template_data: {
+      'cgName': `${cgName}`,
+      'eName': `${eName}`,
+      'eAge': `${eAge}`, 
+      'eEmail': `${eEmail}`, 
+      'ePhoneNumber': `${ePhoneNumber}`, 
+      'dailyCare': `${dailyCare}`, 
+      'specialCare': `${specialCare}`, 
+      'startDate': `${startDate}`,
+      'stopDate': `${stopDate}`,
+      'interview': `${interview}`,
+      'days': `${totalDays}`,
+    },
+    template_id: 'd-34489fb4327b44bf87ed541bff7423b1' // not yet added
+  };
+  sgMail.send(msg);
+}
+
 const sendResponseEmail = (eEmail, eName, cgName, rejection) => {
   const rejected = '';
   const rejectedSubject = '';
@@ -172,11 +216,14 @@ const sendResponseEmail = (eEmail, eName, cgName, rejection) => {
 
 module.exports = {
   sendPasswordResetEmail,
+  sendPasswordResetConfirmEmail,
   sendCaregiverAcceptEmail,
   sendCaregiverRejectionEmail,
   sendCaregiverWelcomeEmail,
   sendCaregiverUpdateEmail,
   sendElderWelcomeEmail,
   sendElderUpdateEmail,
-  sendRequestReceivedEmail
+  sendRequestReceivedEmail,
+  sendRequestSentEmail,
+  sendResponseEmail
 }

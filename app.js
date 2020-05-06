@@ -13,6 +13,7 @@ const path = require("path");
 const
   {
     sendPasswordResetEmail,
+    sendPasswordResetConfirmEmail,
     sendCaregiverAcceptEmail,
     sendCaregiverRejectionEmail,
     sendCaregiverWelcomeEmail,
@@ -388,7 +389,11 @@ app.post("/api/caregivers", (req, res, next) => {
   let path;
   imagePath.findOne({ email: req.body.email }).then(document => {
     console.log(document);
-    path = document.path;
+    if (document === null) {
+      path = '';
+    } else {
+      path = document.path;
+    }
     console.log('path is ' + path);
     // create caregiver model
     const caregiver = new Caregiver({
@@ -1148,7 +1153,9 @@ app.patch("/api/authusers/resetPassword/:token", (req, res, next) => {
       user.passwordResetToken = undefined;
       user.passwordResetExpires = undefined;
       user.save();
+      sendPasswordResetConfirmEmail(user.name, user.email);
     });
+
   });
   // console.log(user);
 
@@ -1193,6 +1200,8 @@ app.post("/api/requests", (req, res, next) => {
     elderName: req.body.elderName,
     caregiverEmail: req.body.caregiverEmail,
     caregiverName: req.body.caregiverName,
+    elderPhoneNumber: req.body.elderPhoneNumber,
+    elderAge: req.body.elderAge,
     startDate: req.body.startDate,
     stopDate: req.body.stopDate,
     status: req.body.status,
@@ -1212,8 +1221,8 @@ app.post("/api/requests", (req, res, next) => {
     request.caregiverName,
     request.elderEmail,
     request.elderName,
-    0,
-    0,
+    request.elderPhoneNumber,
+    request.elderAge,
     request.selectedServices.dailyCare,
     request.selectedServices.specialCare,
     startDate,
