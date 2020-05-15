@@ -20,8 +20,7 @@ const
     sendCaregiverRejectionEmail,
     sendElderUpdateEmail,
     sendCaregiverUpdateEmail,
-    sendRequestSentEmail,
-    sendRequestReceivedEmail,
+    sendRequestEmail,
     sendRequestResponseEmail,
     sendUpdateServicesEmail
   } = require('./email/email')
@@ -31,9 +30,12 @@ const
 mongoose
   .connect(
     "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority",
-    { useFindAndModify: false, useNewUrlParser: true, useUnifiedTopology: true }
-    // { useNewUrlParser: true },
-    // { useUnifiedTopology: true }
+    { 
+      useFindAndModify: false,
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      useCreateIndex: true 
+    }
   )
   .then(() => {
     console.log("Connected to database!");
@@ -42,6 +44,11 @@ mongoose
     console.log("Connection failed!");
     console.log(error);
   });
+
+// mongoose.set('useNewUrlParser', true);
+// mongoose.set('useFindAndModify', false);
+// mongoose.set('useCreateIndex', true);
+// mongoose.set('useUnifiedTopology', true);
 
 // import model
 const Elder = require('./model/elderModel')
@@ -368,6 +375,7 @@ app.patch("/api/services/:id", (req, res, next) => {
 
 // add caregivers
 app.post("/api/caregivers", (req, res, next) => {
+  const now = new Date();
   let path;
   imagePath.findOne({ email: req.body.email }).then(document => {
     console.log(document);
@@ -379,6 +387,7 @@ app.post("/api/caregivers", (req, res, next) => {
     console.log('path is ' + path);
     // create caregiver model
     const caregiver = new Caregiver({
+      joinedDate: now,
       name: req.body.name,
       email: req.body.email,
       password: req.body.password,
@@ -600,6 +609,7 @@ app.get("/api/schedules/:email", (req, res, next) => {
 
 // add elders
 app.post("/api/elders", (req, res, next) => {
+  const now = new Date();
   let path;
   imagePath.findOne({ email: req.body.email }).then(document => {
     console.log(document);
@@ -607,6 +617,7 @@ app.post("/api/elders", (req, res, next) => {
     console.log('path is ' + path);
     // create elder model
     const elder = new Elder({
+      joinedDate: now,
       name: req.body.name,
       email: req.body.email,
       birthDate: req.body.birthDate,
@@ -749,10 +760,12 @@ app.patch("/api/history/:id", (req, res, next) => {
 // add request
 app.post("/api/requests", (req, res, next) => {
   const request = new Request({
-    elderEmail: req.body.elderEmail,
-    elderName: req.body.elderName,
     caregiverEmail: req.body.caregiverEmail,
     caregiverName: req.body.caregiverName,
+    caregiverPhoneNumber: req.body.caregiverPhoneNumber,
+    caregiverAge: req.body.caregiverAge,
+    elderEmail: req.body.elderEmail,
+    elderName: req.body.elderName,
     elderPhoneNumber: req.body.elderPhoneNumber,
     elderAge: req.body.elderAge,
     startDate: req.body.startDate,
@@ -769,9 +782,11 @@ app.post("/api/requests", (req, res, next) => {
   const startDate = `${request.startDate.getDate()}/${request.startDate.getMonth() + 1}/${request.startDate.getFullYear()}`;
   const stopDate = `${request.stopDate.getDate()}/${request.stopDate.getMonth() + 1}/${request.stopDate.getFullYear()}`;
   const totalDays = Math.trunc((request.stopDate.getTime() - request.startDate.getTime()) / 86400000);
-  sendRequestReceivedEmail(
+  sendRequestEmail(
     request.caregiverEmail,
     request.caregiverName,
+    request.caregiverPhoneNumber,
+    request.caregiverAge,
     request.elderEmail,
     request.elderName,
     request.elderPhoneNumber,
@@ -781,8 +796,10 @@ app.post("/api/requests", (req, res, next) => {
     startDate,
     stopDate,
     request.requireInterview,
-    totalDays
-  )
+    totalDays,
+    request.selectedDP,
+    request.selectedMP
+  );
   request.save().then(createdRequest => {
     res.status(201).json({
       message: "request saved successfully",
@@ -826,6 +843,31 @@ app.patch("/api/requests/:id", (req, res, next) => {
     _id: req.body._id,
     status: req.body.status,
     rejectionReason: req.body.rejectionReason
+  });
+  Request.findById(req.params.id).then(req => {
+    const startDate = `${req.startDate.getDate()}/${req.startDate.getMonth() + 1}/${req.startDate.getFullYear()}`;
+    const stopDate = `${req.stopDate.getDate()}/${req.stopDate.getMonth() + 1}/${req.stopDate.getFullYear()}`;
+    const totalDays = Math.trunc((req.stopDate.getTime() - req.startDate.getTime()) / 86400000);
+    sendRequestResponseEmail(
+      req.caregiverEmail,
+      req.caregiverName,
+      req.caregiverPhoneNumber,
+      req.caregiverAge,
+      req.elderEmail,
+      req.elderName,
+      req.elderPhoneNumber,
+      req.elderAge,
+      req.selectedServices.dailyCare,
+      req.selectedServices.specialCare,
+      startDate,
+      stopDate,
+      req.requireInterview,
+      totalDays,
+      req.selectedDP,
+      req.selectedMP,
+      request.status,
+      request.rejectionReason
+    );
   });
   Request.findByIdAndUpdate(id, { $set: { status: req.body.status, rejectionReason: req.body.rejectionReason } }).then(result => {
     res.status(200).json({ message: "Update successful!" });
@@ -899,6 +941,7 @@ app.get("/api/users/:id", (req, res, next) => {
 app.post("/api/authusers/signup", (req, res, next) => {
   bcrypt.hash(req.body.password, 10).then(hash => {
     const authUser = new AuthUser({
+      name: req.body.name,
       email: req.body.email,
       password: hash
     });
@@ -970,8 +1013,8 @@ app.get("/api/authusers", (req, res, next) => {
 
 // forgot password
 app.post("/api/authusers/forgotPassword", (req, res, next) => {
-    // 1) Get user based on POSTed email
-    AuthUser.findOne({ email: req.body.email }, function (err, returnedUser) {
+  // 1) Get user based on POSTed email
+  AuthUser.findOne({ email: req.body.email }, function (err, returnedUser) {
     console.log(returnedUser);
 
     // 2) Generate the random reset token
@@ -986,19 +1029,20 @@ app.post("/api/authusers/forgotPassword", (req, res, next) => {
     returnedUser.save({ validateBeforeSave: false });
 
     // 3) Send it to user's email
-    const resetURL =  `http://localhost:4200/reset-password/${resetToken}`;
+    const resetURL = `http://localhost:4200/reset-password/${resetToken}`;
     console.log(resetURL)
 
+    console.log('returned user info', returnedUser);
     sendPasswordResetEmail(returnedUser.email, returnedUser.name, resetURL);
   });
 });
 
 // find one user based on password reset token
 app.get("/api/authusers/:token", (req, res, next) => {
-  const token =  crypto
-  .createHash('sha256')
-  .update(req.params.token)
-  .digest('hex');
+  const token = crypto
+    .createHash('sha256')
+    .update(req.params.token)
+    .digest('hex');
   AuthUser.findOne({ passwordResetToken: token }).then(document => {
     res.status(200).json(document);
     console.log(document)
@@ -1012,12 +1056,12 @@ app.patch("/api/authusers/resetPassword/:token", (req, res, next) => {
     .createHash('sha256')
     .update(req.params.token)
     .digest('hex');
-    console.log(req.params.token, hashedToken);
+  console.log(req.params.token, hashedToken);
 
   AuthUser.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpires: { $gt: Date.now() }
-  }, function(err, user) {
+  }, function (err, user) {
     console.log(user);
     bcrypt.hash(req.body.password, 10).then(hash => {
       user.password = hash;

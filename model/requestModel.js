@@ -3,8 +3,12 @@ const mongoose = require('mongoose');
 const requestSchema = mongoose.Schema({
   caregiverName: {type: String},
   caregiverEmail: {type: String},
+  caregiverPhoneNumber: {type: String},
+  caregiverAge: {type: Number},
   elderName: {type: String},
   elderEmail: {type: String},
+  elderPhoneNumber: {type: String},
+  elderAge: {type: Number},
   startDate: {type: Date},
   stopDate: {type: Date},
   requireInterview: {type: Boolean},

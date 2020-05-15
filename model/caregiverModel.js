@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const caregiverSchema = mongoose.Schema({
+  joinedDate: {type: Date},
   name: {type: String},
   email: {type: String},
   password: {type: String},

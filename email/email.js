@@ -94,9 +94,9 @@ const sendElderWelcomeEmail = (email, name) => {
     from: 'test@example.com',
     subject: 'Welcome to Our Service',
     dynamic_template_data: {
-      'edName': `${name}`,
+      'name': `${name}`,
     },
-    template_id: 'd-0b70b0175f9b469aa2919ddc274c9a39'
+    template_id: 'd-2dcca117cccd429797966d40ad976cd3'
   };
   sgMail.send(msg);
 }
@@ -129,11 +129,11 @@ const sendElderUpdateEmail = (email, name) => {
   sgMail.send(msg);
 };
 
-const sendRequestReceivedEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNumber, dailyCare, specialCare, startDate, stopDate, requireInterview, totalDays) => {
+const sendRequestEmail = (cgEmail, cgName, cgPhoneNumber, cgAge, eEmail, eName, ePhoneNumber, eAge, dailyCare, specialCare, startDate, stopDate, requireInterview, totalDays, dailyPrice, monthlyPrice) => {
   let interview = '';
   if (requireInterview === true) {
     interview = 'Required.';
-  } else if (require === false) {
+  } else if (requireInterview === false) {
     interview = 'Not Required.';
   }
   // const newStartDate = new Date(`${startDate}`)
@@ -141,7 +141,30 @@ const sendRequestReceivedEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNu
   // const totalDays = Math.trunc((newStopDate.getTime() - newStartDate.getTime()) / 86400000);
   // const totalPrice = totalDays * dailyPrice;
   console.log(`sending to ${cgEmail} and ${eEmail}`);
-  const msg = {
+  const sent = {
+    to: `${eEmail}`,
+    from: 'test@example.com',
+    subject: 'New Request Received',
+    dynamic_template_data: {
+      'cgName': `${cgName}`,
+      'cgEmail': `${cgEmail}`,
+      'cgPhoneNumber': `${cgPhoneNumber}`,
+      'cgAge': `${cgAge}`,
+      'eName': `${eName}`,
+      'eAge': `${eAge}`, 
+      'ePhoneNumber': `${ePhoneNumber}`, 
+      'dailyCare': `${dailyCare}`, 
+      'specialCare': `${specialCare}`, 
+      'startDate': `${startDate}`,
+      'stopDate': `${stopDate}`,
+      'interview': `${interview}`,
+      'days': `${totalDays}`,
+      'dailyPrice': `${dailyPrice}`,
+      'monthlyPrice': `${monthlyPrice}`,
+    },
+    template_id: 'd-5721de2fcdb34d6c845d39a00a138939'
+  };
+  const received = {
     to: `${cgEmail}`,
     from: 'test@example.com',
     subject: 'New Request Received',
@@ -157,14 +180,23 @@ const sendRequestReceivedEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNu
       'stopDate': `${stopDate}`,
       'interview': `${interview}`,
       'days': `${totalDays}`,
+      'dailyPrice': `${dailyPrice}`,
+      'monthlyPrice': `${monthlyPrice}`,
     },
     template_id: 'd-34489fb4327b44bf87ed541bff7423b1'
   };
-  sgMail.send(msg);
+  sgMail.send(sent);
+  sgMail.send(received);
 }
 
-const sendRequestSentEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNumber, dailyCare, specialCare, startDate, stopDate, requireInterview, totalDays) => {
+const sendRequestResponseEmail = (cgEmail, cgName, cgPhoneNumber, cgAge, eEmail, eName, ePhoneNumber, eAge, dailyCare, specialCare, startDate, stopDate, requireInterview, totalDays, dailyPrice, monthlyPrice, status, reason) => {
   let interview = '';
+  let template_id = '';
+  if (status === true) {
+    template_id = 'd-dcefd44f446b4f998868988e3429cd5b';
+  } else if (status === false) {
+    template_id = 'd-cac49ff4c9f348bbb512f3c06217d458';
+  }
   if (requireInterview === true) {
     interview = 'Required.';
   } else if (require === false) {
@@ -172,11 +204,13 @@ const sendRequestSentEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNumber
   }
   console.log(`sending to ${cgEmail} and ${eEmail}`);
   const msg = {
-    to: `${cgEmail}`,
+    to: `${eEmail}`,
     from: 'test@example.com',
     subject: 'New Request Received',
     dynamic_template_data: {
       'cgName': `${cgName}`,
+      'cgAge': `${cgAge}`,
+      'cgPhoneNumber': `${cgPhoneNumber}`,
       'eName': `${eName}`,
       'eAge': `${eAge}`, 
       'eEmail': `${eEmail}`, 
@@ -187,29 +221,13 @@ const sendRequestSentEmail = (cgEmail, cgName, eEmail, eName, eAge, ePhoneNumber
       'stopDate': `${stopDate}`,
       'interview': `${interview}`,
       'days': `${totalDays}`,
+      'dailyPrice': `${dailyPrice}`,
+      'monthlyPrice': `${monthlyPrice}`,
+      'reason': `${reason}`
     },
-    template_id: 'd-34489fb4327b44bf87ed541bff7423b1' // not yet added
+    template_id: template_id
   };
   sgMail.send(msg);
-}
-
-const sendRequestResponseEmail = (eEmail, eName, cgName, rejection) => {
-  const rejected = '';
-  const rejectedSubject = '';
-  if (rejection === true) {
-    rejected = 'rejected';
-    rejectedSubject = 'Rejected';
-  } else if (rejection === false) {
-    rejected = 'accepted';
-    rejectedSubject = 'Accepted';
-  }
-  console.log(`sending to ${eEmail}`);
-  sgMail.send({
-    to: eEmail,
-    from: 'noreply@ecsf.com',
-    subject: `Request ${rejectedSubject}`,
-    text: `Hi, ${cgName}. Your request that was sent to ${cgEmail} was ${rejected}.`
-  })
 }
 
 const sendUpdateServicesEmail = (eEmail, eName, cgName, rejection) => {
@@ -240,8 +258,7 @@ module.exports = {
   sendCaregiverRejectionEmail,
   sendElderUpdateEmail,
   sendCaregiverUpdateEmail,
-  sendRequestSentEmail,
-  sendRequestReceivedEmail,
+  sendRequestEmail,
   sendRequestResponseEmail,
   sendUpdateServicesEmail
 }
