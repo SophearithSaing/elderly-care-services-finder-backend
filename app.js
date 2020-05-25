@@ -4,10 +4,9 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const bcrypt = require("bcryptjs")
 const jwt = require('jsonwebtoken');
-const Fuse = require('fuse.js')
 const checkAuth = require('./middleware/check-auth');
-const multer = require("multer")
-const crypto = require("crypto")
+const multer = require("multer");
+const crypto = require("crypto");
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
 const
@@ -30,11 +29,11 @@ const
 mongoose
   .connect(
     "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority",
-    { 
+    {
       useFindAndModify: false,
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      useCreateIndex: true 
+      useCreateIndex: true
     }
   )
   .then(() => {
@@ -146,53 +145,6 @@ const newStorage = multer.diskStorage({
   }
 });
 
-// messages
-app.post('/api/messages', (req, res, next) => {
-  const messages = new Messages({
-    elder: req.body.elder,
-    caregiver: req.body.caregiver,
-    messages: req.body.messages
-  });
-  console.log(path);
-  messages
-    .save()
-    .then(response => {
-      res.status(201).json({
-        message: "file saved successfully"
-      });
-    });
-})
-
-app.patch('/api/messages', (req, res, next) => {
-  const messages = new Messages({
-    elder: req.body.elder,
-    caregiver: req.body.caregiver,
-    messages: req.body.messages
-  });
-  console.log(path);
-  Messages.findOneAndUpdate({ $and: [{ elder: messages.elder }, { caregiver: messages.caregiver }] }, { $set: { messages: messages.messages } }).then(result => {
-    res.status(200).json({ message: "Update successful!" });
-  });
-})
-
-app.get("/api/messages", (req, res, next) => {
-  Messages.find().then(document => {
-    res.status(200).json(document);
-    console.log(document)
-  });
-});
-
-app.get("/api/messages/:elder&:caregiver", (req, res, next) => {
-  const elder = req.params.elder;
-  const caregiver = req.params.caregiver;
-  console.log(elder, caregiver);
-  Messages.find({ $and: [{ elder: elder }, { caregiver: caregiver }] }).then(document => {
-    res.status(200).json(document);
-    console.log(document)
-  });
-});
-////////////////////////////////////////////////////////////////////////////////////////
-
 // upload image to 'upload'
 app.post('/api/upload', multer({ storage: storage }).single('upload'), (req, res) => {
   const url = req.protocol + "://" + req.get("host");
@@ -291,7 +243,22 @@ app.post("/api/rejections", (req, res, next) => {
         error: err
       });
     });
-  sendCaregiverRejectionEmail(rejection.caregiverEmail, rejection.caregiverName, rejection.reason)
+  Caregiver.findOne({ email: rejection.caregiverEmail }).then(document => {
+    const birthYear = new Date(document.birthDate).getFullYear();
+    const year = new Date().getFullYear();
+    document.age = year - birthYear;
+    sendCaregiverRejectionEmail(
+      document.email,
+      document.name,
+      rejection.reason,
+      document.age,
+      document.phoneNumber,
+      document.services.dailyCare,
+      document.services.specialCare,
+      document.dailyPrice,
+      document.monthlyPrice
+    );
+  });
 });
 
 // update rejections
@@ -304,7 +271,22 @@ app.patch("/api/rejections", (req, res, next) => {
   Rejection.findOneAndUpdate({ caregiverEmail: rejection.caregiverEmail }, { $set: { reason: rejection.reason } }).then(result => {
     res.status(200).json({ message: "Update successful!", availability: schedule.availability });
   });
-  sendCaregiverRejectionEmail(rejection.caregiverEmail, rejection.caregiverName, rejection.reason)
+  Caregiver.findOne({ email: rejection.caregiverEmail }).then(document => {
+    const birthYear = new Date(document.birthDate).getFullYear();
+    const year = new Date().getFullYear();
+    document.age = year - birthYear;
+    sendCaregiverRejectionEmail(
+      document.email,
+      document.name,
+      rejection.reason,
+      document.age,
+      document.phoneNumber,
+      document.services.dailyCare,
+      document.services.specialCare,
+      document.dailyPrice,
+      document.monthlyPrice
+    );
+  });
 });
 
 // get all rejections
@@ -412,20 +394,33 @@ app.post("/api/caregivers", (req, res, next) => {
     // save caregiver
     caregiver
       .save()
-      .then(createdCaregiver => {
+      .then(document => {
         res.status(201).json({
           message: "user saved successfully",
-          caregiver: createdCaregiver
+          caregiver: document
         });
         console.log('new caregiver created')
-        console.log(createdCaregiver)
+        console.log(document)
+        const birthYear = new Date(document.birthDate).getFullYear();
+        const year = new Date().getFullYear();
+        document.age = year - birthYear;
+        sendCaregiverWelcomeEmail(
+          document.email,
+          document.name,
+          rejection.reason,
+          document.age,
+          document.phoneNumber,
+          document.services.dailyCare,
+          document.services.specialCare,
+          document.dailyPrice,
+          document.monthlyPrice
+        );
       })
       .catch(err => {
         res.status(500).json({
           error: err
         });
       });
-    sendCaregiverWelcomeEmail(caregiver.email, caregiver.name)
   });
 });
 
@@ -482,6 +477,7 @@ app.get("/api/allcg", (req, res, next) => {
   });
 });
 
+// count all elders
 app.get("/api/alle", (req, res, next) => {
   Elder.countDocuments().then(count => {
     res.status(200).json({
@@ -521,13 +517,42 @@ app.patch("/api/caregivers/:email", (req, res, next) => {
       schedule: req.body.availability,
       approval: req.body.approval
     });
+    Caregiver.findOne({ email: req.params.email }).then(document => {
+      const birthYear = new Date(document.birthDate).getFullYear();
+      const year = new Date().getFullYear();
+      document.age = year - birthYear;
+      sendCaregiverWelcomeEmail(
+        document.email,
+        document.name,
+        document.age,
+        document.phoneNumber,
+        document.services.dailyCare,
+        document.services.specialCare,
+        document.dailyPrice,
+        document.monthlyPrice
+      )
+    });
     Caregiver.updateOne({ email: req.params.email }, caregiver).then(result => {
       res.status(200).json({ message: "Update successful!" });
     });
     sendCaregiverUpdateEmail(caregiver.email, caregiver.name);
     console.log(req.body.newCg)
     if (req.body.newCg === true) {
-      sendCaregiverAcceptEmail(caregiver.email, caregiver.name);
+      Caregiver.findOne({ email: req.params.email }).then(document => {
+        const birthYear = new Date(document.birthDate).getFullYear();
+        const year = new Date().getFullYear();
+        document.age = year - birthYear;
+        sendCaregiverAcceptEmail(
+          document.email,
+          document.name,
+          document.age,
+          document.phoneNumber,
+          document.services.dailyCare,
+          document.services.specialCare,
+          document.dailyPrice,
+          document.monthlyPrice
+        )
+      });
     }
     console.log('new caregiver');
     console.log(caregiver);

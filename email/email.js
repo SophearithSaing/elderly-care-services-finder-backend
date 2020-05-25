@@ -44,7 +44,7 @@ const sendPasswordResetConfirmEmail = (email, name, url) => {
   sgMail.send(msg);
 };
 
-const sendCaregiverAcceptEmail = (email, name) => {
+const sendCaregiverAcceptEmail = (email, name, age, phoneNumber, dailyCare, specialCare, dailyPrice, monthlyPrice) => {
   console.log('sending to ' + email + ' for ' + name);
   const msg = {
     to: `${email}`,
@@ -52,13 +52,20 @@ const sendCaregiverAcceptEmail = (email, name) => {
     subject: 'Your Request was Rejected',
     dynamic_template_data: {
       'name': `${name}`,
+      'age': `${age}`,
+      'email': `${email}`,
+      'phoneNumber': `${phoneNumber}`,
+      'dailyCare': `${dailyCare}`,
+      'specialCare': `${specialCare}`,
+      'dailyPrice': `${dailyPrice}`,
+      'monthlyPrice': `${monthlyPrice}`
     },
     template_id: 'd-b273721896f5456fb831a4f5f70f411e'
   };
   sgMail.send(msg);
 }
 
-const sendCaregiverRejectionEmail = (email, name, reason) => {
+const sendCaregiverRejectionEmail = (email, name, reason, age, phoneNumber, dailyCare, specialCare, dailyPrice, monthlyPrice) => {
   console.log('sending to ' + email + ' for ' + name);
   const msg = {
     to: `${email}`,
@@ -66,23 +73,37 @@ const sendCaregiverRejectionEmail = (email, name, reason) => {
     subject: 'Your Request was Rejected',
     dynamic_template_data: {
       'name': `${name}`,
-      'reason': `${reason}`
+      'reason': `${reason}`,
+      'age': `${age}`,
+      'email': `${email}`,
+      'phoneNumber': `${phoneNumber}`,
+      'dailyCare': `${dailyCare}`,
+      'specialCare': `${specialCare}`,
+      'dailyPrice': `${dailyPrice}`,
+      'monthlyPrice': `${monthlyPrice}`
     },
     template_id: 'd-b4fef1b69d8c4c0bb178a091f58fd420'
   };
   sgMail.send(msg);
 }
 
-const sendCaregiverWelcomeEmail = (email, name) => {
+const sendCaregiverWelcomeEmail = (email, name, age, phoneNumber, dailyCare, specialCare, dailyPrice, monthlyPrice) => {
   console.log('sending to ' + email + ' for ' + name);
   const msg = {
     to: `${email}`,
     from: 'test@example.com',
     subject: 'Welcome to Our Service',
     dynamic_template_data: {
-      'cgName': `${name}`,
+      'name': `${name}`,
+      'age': `${age}`,
+      'email': `${email}`,
+      'phoneNumber': `${phoneNumber}`,
+      'dailyCare': `${dailyCare}`,
+      'specialCare': `${specialCare}`,
+      'dailyPrice': `${dailyPrice}`,
+      'monthlyPrice': `${monthlyPrice}`
     },
-    template_id: 'd-63b55b18f639489092d80093fc01d8a0'
+    template_id: 'd-77e554557d8742f7ba96d4e699984c85'
   };
   sgMail.send(msg);
 }
@@ -208,6 +229,7 @@ const sendRequestResponseEmail = (cgEmail, cgName, cgPhoneNumber, cgAge, eEmail,
     from: 'test@example.com',
     subject: 'New Request Received',
     dynamic_template_data: {
+      'cgEmail': `${cgEmail}`,
       'cgName': `${cgName}`,
       'cgAge': `${cgAge}`,
       'cgPhoneNumber': `${cgPhoneNumber}`,
