@@ -1036,6 +1036,21 @@ app.get("/api/authusers", (req, res, next) => {
   })
 })
 
+// get one auth users
+app.get("/api/authusers/:email", (req, res, next) => {
+  AuthUser.findOne({ email: req.params.email }).then(document => {
+    if (!document) {
+      res.status(200).json({
+        exist: false
+      });
+    } else {
+      res.status(200).json({
+        exist: true
+      });
+    }
+  });
+})
+
 // forgot password
 app.post("/api/authusers/forgotPassword", (req, res, next) => {
   // 1) Get user based on POSTed email
