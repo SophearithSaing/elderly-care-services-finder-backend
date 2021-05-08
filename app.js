@@ -7,6 +7,8 @@ const jwt = require('jsonwebtoken');
 const checkAuth = require('./middleware/check-auth');
 const multer = require("multer");
 const crypto = require("crypto");
+const dotenv = require('dotenv');
+dotenv.config();
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
 const
