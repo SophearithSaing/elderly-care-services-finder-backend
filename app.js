@@ -8,7 +8,9 @@ const checkAuth = require('./middleware/check-auth');
 const multer = require("multer");
 const crypto = require("crypto");
 const dotenv = require('dotenv');
-dotenv.config();
+dotenv.config({
+  path: './process.env',
+});
 // const upload = multer({ dest: 'images/' })
 const path = require("path");
 const
@@ -28,9 +30,13 @@ const
 
 
 // connect to database
+const DB = process.env.DATABASE.replace(
+  '<PASSWORD>',
+  process.env.DATABASE_PASSWORD
+);
 mongoose
   .connect(
-    "mongodb+srv://admin:Ve6VxyxV3NotCGdZ@cluster0-douoa.azure.mongodb.net/test-database?retryWrites=true&w=majority",
+    DB,
     {
       useFindAndModify: false,
       useNewUrlParser: true,
