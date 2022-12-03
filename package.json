@@ -13,7 +13,7 @@
     "dotenv": "^8.6.0",
     "eva-icons": "^1.1.3",
     "express": "^4.17.1",
-    "firebase": "^8.9.0",
+    "firebase": "^8.10.1",
     "font-awesome": "^4.7.0",
     "fuse.js": "^3.6.1",
     "hammerjs": "^2.0.8",
